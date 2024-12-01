@@ -1,0 +1,2 @@
+watchdog>=3.0.0
+liblistenbrainz>=0.5.0 

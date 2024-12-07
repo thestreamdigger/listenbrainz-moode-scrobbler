@@ -1,4 +1,4 @@
-# ListenBrainz Moode Scrobbler
+# ListenBrainz moOde Scrobbler
 
 A Python script to integrate moOde audio player (for Raspberry Pi) with ListenBrainz, enabling automatic scrobbling of played tracks.
 

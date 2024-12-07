@@ -182,22 +182,87 @@ The scrobbler can be configured to ignore specific content using pattern matchin
 
 ## Usage
 
-After installation, you can run the script in two ways:
+### Running as a Service (Recommended)
+
+1. Create a systemd service file:
+```bash
+sudo nano /etc/systemd/system/listenbrainz-moode.service
+```
+
+2. Add the following content (adjust paths as needed):
+```ini
+[Unit]
+Description=ListenBrainz moOde Scrobbler
+After=network.target moode.service
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/listenbrainz-moode-scrobbler
+Environment=PATH=/home/pi/listenbrainz-moode-scrobbler/venv/bin:$PATH
+ExecStart=/home/pi/listenbrainz-moode-scrobbler/venv/bin/python -m src.main
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+3. Enable and start the service:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable listenbrainz-moode
+sudo systemctl start listenbrainz-moode
+```
+
+4. Check service status:
+```bash
+sudo systemctl status listenbrainz-moode
+```
+
+5. View logs:
+```bash
+sudo journalctl -u listenbrainz-moode -f
+```
+
+### Manual Execution (For Testing)
+
+You can also run the script manually in two ways:
 
 1. Using the installed command:
 ```bash
+source venv/bin/activate
 listenbrainz-moode
 ```
 
 2. Using Python module:
 ```bash
-python -m lbms.main
+source venv/bin/activate
+python -m src.main
 ```
 
 The script will:
 - Validate your ListenBrainz token
 - Start monitoring the metadata file
 - Automatically submit played track information
+
+### Service Management Commands
+
+- Stop the service:
+```bash
+sudo systemctl stop listenbrainz-moode
+```
+
+- Restart the service:
+```bash
+sudo systemctl restart listenbrainz-moode
+```
+
+- Disable service autostart:
+```bash
+sudo systemctl disable listenbrainz-moode
+```
 
 ## Features
 

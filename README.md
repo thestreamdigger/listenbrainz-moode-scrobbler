@@ -6,10 +6,38 @@ A Python script to integrate moOde audio player (for Raspberry Pi) with ListenBr
 
 This script monitors tracks played on moOde audio player and sends them to ListenBrainz, keeping your listening history up to date. It supports:
 
-- "Now Playing" status submission
-- Track scrobbling after minimum play time
-- Local cache for offline listens
-- Automatic track metadata reading
+- "Now Playing" status submission (real-time updates)
+- Track scrobbling after configurable minimum play time
+- Local cache for offline listens with automatic retry
+- Automatic track metadata reading (title, artist, album)
+- Radio station optional filtering
+- Configurable retry mechanism for failed submissions
+- Detailed debug logging
+- Support for UTF-8 encoded metadata
+
+### Key Features
+
+#### Real-time Updates
+- Monitors moOde's metadata file for changes
+- Instantly updates "Now Playing" status on ListenBrainz
+- Shows current track information in your profile
+
+#### Smart Scrobbling
+- Configurable minimum play time before scrobbling
+- Optional filtering of radio/stream content
+- Accurate timestamp recording
+
+#### Offline Support
+- Local caching of failed submissions
+- Automatic retry when connection is restored
+- Persistent storage of pending scrobbles
+- Queue management for reliability
+
+#### Easy Configuration
+- JSON-based settings file
+- Customizable features and behaviors
+- Adjustable retry parameters
+- Simple token-based authentication
 
 ## Prerequisites
 
@@ -86,9 +114,71 @@ pip install listenbrainz-moode-scrobbler
    - Go to profile settings
    - Copy your token
 
-2. Configure your ListenBrainz token:
-   - Open `lbms/main.py` file
-   - Replace `LISTENBRAINZ_TOKEN` with your personal token
+2. Configure your settings:
+   - Open `src/settings.json`
+   - Replace `"your-token-here"` with your personal ListenBrainz token
+   - Adjust other settings if needed:
+     ```json
+     {
+         "listenbrainz_token": "your-token-here",
+         "currentsong_file": "/var/local/www/currentsong.txt",
+         "min_play_time": 30,
+         "features": {
+             "enable_listening_now": true,
+             "enable_listen": true,
+             "enable_cache": true,
+             "ignore_radio": true
+         },
+         "filters": {
+             "ignore_patterns": {
+                 "artist": ["Radio station", "Unknown Artist"],
+                 "album": ["radio", "stream", "webradio"],
+                 "title": ["commercial break", "station id"]
+             },
+             "case_sensitive": false
+         },
+         "retry": {
+             "count": 3,
+             "delay": 2
+         }
+     }
+     ```
+
+## Settings
+
+The `settings.json` file allows you to customize:
+
+- `listenbrainz_token`: Your personal ListenBrainz API token
+- `currentsong_file`: Path to moOde's current song metadata file
+- `min_play_time`: Minimum time (in seconds) before recording a track
+- `features`:
+  - `enable_listening_now`: Enable/disable "Now Playing" status
+  - `enable_listen`: Enable/disable scrobbling
+  - `enable_cache`: Enable/disable local cache
+  - `ignore_radio`: Enable/disable radio station filtering
+- `filters`:
+  - `ignore_patterns`: Patterns to ignore in metadata fields
+    - `artist`: List of artist names to ignore
+    - `album`: List of album name patterns to ignore
+    - `title`: List of title patterns to ignore
+  - `case_sensitive`: Whether pattern matching is case-sensitive
+- `retry`:
+  - `count`: Number of retry attempts for failed submissions
+  - `delay`: Delay (in seconds) between retry attempts
+
+### Content Filtering
+
+The scrobbler can be configured to ignore specific content using pattern matching:
+
+- Configure patterns for each metadata field (artist, album, title)
+- Case-sensitive matching is optional
+- Multiple patterns can be defined for each field
+- Useful for filtering:
+  - Radio stations and streams
+  - Unknown or generic artists
+  - Commercial breaks
+  - Station identifications
+  - Web radio content
 
 ## Usage
 
@@ -108,17 +198,6 @@ The script will:
 - Validate your ListenBrainz token
 - Start monitoring the metadata file
 - Automatically submit played track information
-
-## Settings
-
-In `src/settings.json` you can adjust these settings:
-
-- `min_play_time`: Minimum time (in seconds) before recording a track
-- `features`:
-  - `enable_listening_now`: Enable/disable "Now Playing" status
-  - `enable_listen`: Enable/disable scrobbling
-  - `enable_cache`: Enable/disable local cache
-  - `ignore_radio`: Enable/disable radio station scrobbling
 
 ## Features
 

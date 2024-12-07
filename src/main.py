@@ -260,15 +260,28 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
             return None
 
     def is_radio_content(self, song_info):
-        if self.settings['features'].get('ignore_radio', True):
-            is_radio = (
-                song_info.get('artist') == "Radio station" or 
-                'radio' in song_info.get('album', '').lower() or
-                'stream' in song_info.get('album', '').lower()
-            )
-            if is_radio:
-                print(f"[DEBUG]  Ignoring radio content: {song_info.get('title')} ({song_info.get('album')})")
+        if not self.settings['features'].get('ignore_radio', True):
+            return False
+
+        filters = self.settings.get('filters', {})
+        ignore_patterns = filters.get('ignore_patterns', {})
+        case_sensitive = filters.get('case_sensitive', False)
+
+        def match_patterns(text, patterns):
+            if not text or not patterns:
+                return False
+            
+            if not case_sensitive:
+                text = text.lower()
+                patterns = [p.lower() for p in patterns]
+                
+            return any(pattern in text for pattern in patterns)
+
+        for field, patterns in ignore_patterns.items():
+            if match_patterns(song_info.get(field, ''), patterns):
+                print(f"[DEBUG]  Ignoring content: {song_info.get('title')} (matched {field} pattern)")
                 return True
+
         return False
 
 def main():

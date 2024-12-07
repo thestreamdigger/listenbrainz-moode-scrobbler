@@ -8,6 +8,14 @@
         "enable_cache": true,
         "ignore_radio": true
     },
+    "filters": {
+        "ignore_patterns": {
+            "artist": ["Radio station", "Unknown Artist"],
+            "album": [],
+            "title": []
+        },
+        "case_sensitive": false
+    },
     "retry": {
         "count": 3,
         "delay": 2

@@ -1,4 +1,4 @@
-# ListenBrainz moOde Scrobbler
+# ListenBrainz Moode Scrobbler
 
 A Python script to integrate moOde audio player (for Raspberry Pi) with ListenBrainz, enabling automatic scrobbling of played tracks.
 
@@ -20,12 +20,9 @@ This script monitors tracks played on moOde audio player and sends them to Liste
 ## Project Structure
 
 ```
-listenbrainz-moode-scrobbler/
-├── src/
-│   ├── __init__.py
-│   ├── main.py
-│   ├── settings.json
-│   └── pending_listens.json
+lbms/
+├── __init__.py
+├── main.py
 ├── README.md
 ├── requirements.txt
 └── setup.py
@@ -45,8 +42,8 @@ listenbrainz-moode-scrobbler/
 ### From Source
 1. Clone this repository:
 ```bash
-git clone https://github.com/thestreamdigger/listenbrainz-moode-scrobbler.git
-cd listenbrainz-moode-scrobbler
+git clone https://github.com/your-username/listenbrainz-moode-script.git
+cd listenbrainz-moode-script
 ```
 
 2. Install in development mode:
@@ -56,7 +53,7 @@ pip install -e .
 
 ### Using pip
 ```bash
-pip install listenbrainz-moode-scrobbler
+pip install listenbrainz-moode-script
 ```
 
 ## Configuration
@@ -66,52 +63,9 @@ pip install listenbrainz-moode-scrobbler
    - Go to profile settings
    - Copy your token
 
-2. Configure your settings:
-   - Locate `settings.json` in the installation directory
-   - Add your ListenBrainz token
-   - Adjust other settings as needed
-
-### Available Settings
-
-```json
-{
-    "listenbrainz_token": "your-token-here",
-    "currentsong_file": "/var/local/www/currentsong.txt",
-    "min_play_time": 30,
-    "features": {
-        "enable_listening_now": true,
-        "enable_listen": true,
-        "enable_cache": true
-    },
-    "retry": {
-        "count": 3,
-        "delay": 2
-    }
-}
-```
-
-- `listenbrainz_token`: Your ListenBrainz API token
-- `currentsong_file`: Path to moOde's current song file
-- `min_play_time`: Minimum seconds before recording a track
-- `features`: Enable/disable specific features
-- `retry`: Configure retry behavior for failed submissions
-
-## Settings
-
-All script settings are managed through the `settings.json` file located in the `src/` directory. You can configure the following options:
-
-- `listenbrainz_token`: Your ListenBrainz API token
-- `currentsong_file`: Path to moOde's current song file
-- `min_play_time`: Minimum seconds before recording a track
-- `features`: Enable/disable specific features
-  - `enable_listening_now`: Enable "Now Playing" status updates
-  - `enable_listen`: Enable track scrobbling
-  - `enable_cache`: Enable local cache for offline submissions
-- `retry`: Configure retry behavior for failed submissions
-  - `count`: Number of retry attempts
-  - `delay`: Time (in seconds) between retries
-
-Make sure to set your ListenBrainz token in `settings.json` before running the script.
+2. Configure your ListenBrainz token:
+   - Open `lbms/main.py` file
+   - Replace `LISTENBRAINZ_TOKEN` with your personal token
 
 ## Usage
 
@@ -131,6 +85,17 @@ The script will:
 - Validate your ListenBrainz token
 - Start monitoring the metadata file
 - Automatically submit played track information
+
+## Settings
+
+In `src/settings.json` you can adjust these settings:
+
+- `min_play_time`: Minimum time (in seconds) before recording a track
+- `features`:
+  - `enable_listening_now`: Enable/disable "Now Playing" status
+  - `enable_listen`: Enable/disable scrobbling
+  - `enable_cache`: Enable/disable local cache
+  - `ignore_radio`: Enable/disable radio station scrobbling
 
 ## Features
 
@@ -175,12 +140,13 @@ Contributions are welcome! Feel free to:
 
 ## License
 
-This project is free to use.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
 - [moOde audio player](https://moodeaudio.org/) team
 - [ListenBrainz](https://listenbrainz.org/) project
+- All contributors and users of this script
 
 ## Support
 
@@ -191,4 +157,4 @@ If you encounter any issues or need help, please:
 
 ---
 
-**Note:** This project is DIY and is not in any relation with moOde or ListenBrainz.
+**Note:** This project is DIY and is not officially in any relation with moOde audio or ListenBrainz.

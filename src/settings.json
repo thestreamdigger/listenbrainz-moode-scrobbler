@@ -1,11 +1,12 @@
 {
-    "listenbrainz_token": "copy-here-your-token",
+    "listenbrainz_token": "80c6acc0-b7f3-4ddc-bef2-4e7fdb317f51",
     "currentsong_file": "/var/local/www/currentsong.txt",
     "min_play_time": 30,
     "features": {
         "enable_listening_now": true,
         "enable_listen": true,
-        "enable_cache": true
+        "enable_cache": true,
+        "ignore_radio": true
     },
     "retry": {
         "count": 3,

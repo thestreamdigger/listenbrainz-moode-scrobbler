@@ -8,7 +8,14 @@ from watchdog.events import FileSystemEventHandler
 from liblistenbrainz import ListenBrainz, Listen
 from threading import Thread
 
+CURRENTSONG_FILE = '/var/local/www/currentsong.txt'
+LISTENBRAINZ_TOKEN = '80c6acc0-b7f3-4ddc-bef2-4e7fdb317f51'
+MIN_PLAY_TIME = 30
 CACHE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pending_listens.json')
+
+ENABLE_LISTENING_NOW = True
+ENABLE_LISTEN = True
+ENABLE_CACHE = True
 
 
 class ListenCache:
@@ -61,115 +68,29 @@ class ListenCache:
                 break
 
 
-def load_settings():
-    settings_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'settings.json')
-    try:
-        with open(settings_path, 'r') as f:
-            return json.load(f)
-    except FileNotFoundError:
-        print("Settings file not found. Please create a 'settings.json' file in the 'src' directory.")
-        exit(1)
-    except json.JSONDecodeError:
-        print("Error parsing 'settings.json'. Please ensure it is valid JSON.")
-        exit(1)
-
-
 class ListenBrainzScrobbler(FileSystemEventHandler):
-    def __init__(self):
-        print("DEBUG - Initializing ListenBrainzScrobbler")
-        self.settings = load_settings()
+    def __init__(self, token):
         self.client = ListenBrainz()
-        self.token = self.settings["listenbrainz_token"]
-        self.currentsong_file = self.settings["currentsong_file"]
-        self.min_play_time = self.settings["min_play_time"]
-        self.listen_cache = ListenCache(CACHE_FILE) if self.settings["features"]["enable_cache"] else None
+        self.token = token
+        self.listen_cache = ListenCache(CACHE_FILE) if ENABLE_CACHE else None
         self.current_song = None
         self.play_start_time = None
-        self.retry_count = self.settings["retry"]["count"]
-        self.retry_delay = self.settings["retry"]["delay"]
-
-        self.validate_settings()
-
-    def validate_settings(self):
-        if not self.token:
-            print("ListenBrainz token is not set in 'settings.json'. Please provide a valid token.")
-            exit(1)
+        self.retry_count = 3
+        self.settings = self.load_settings()
 
     def validate_token(self):
         try:
             self.client.set_auth_token(self.token)
-            print("Token validated successfully. Connection to ListenBrainz is active.")
         except Exception as e:
-            print("Token validation failed! Please check your ListenBrainz token.")
+            print(f"[ERROR]  Token validation failed: {e}")
             exit(1)
 
-    def submit_playing_now(self, song_info):
-        print("DEBUG - Entering submit_playing_now")
-        if not self.settings["features"]["enable_listening_now"]:
-            print("DEBUG - Listening Now disabled, skipping")
-            return True
-
-        try:
-            listen = Listen(
-                track_name=song_info['title'],
-                artist_name=song_info['artist'],
-                release_name=song_info.get('album', '')
-            )
-            print(f"DEBUG - Created Listen object for Listening Now: {song_info['title']}")
-
-            self.client.submit_playing_now(listen)
-            print(f"Listening Now: {song_info['title']} by {song_info['artist']} ({song_info.get('album', 'N/A')})")
-            return True
-        except Exception as e:
-            print(f"DEBUG - Error in submit_playing_now: {str(e)}")
-            return False
-
-    def submit_listen(self, song_info):
-        print("DEBUG - Entering submit_listen")
-        if not self.settings["features"]["enable_listen"]:
-            print("DEBUG - Listen submission disabled")
-            return
-
-        current_time = time.time()
-        play_time = current_time - self.play_start_time if self.play_start_time else 0
-        print(f"DEBUG - Calculated play time: {int(play_time)}s")
-
-        if play_time < self.min_play_time:
-            print(f"Song skipped: {song_info['title']} (played for {int(play_time)}s, minimum required: {self.min_play_time}s)")
-            return
-
-        print(f"DEBUG - Creating Listen object for submission")
-        listen = Listen(
-            track_name=song_info['title'],
-            artist_name=song_info['artist'],
-            release_name=song_info.get('album', ''),
-            listened_at=int(current_time)
-        )
-
-        for attempt in range(self.retry_count):
-            try:
-                print(f"DEBUG - Attempting submission (attempt {attempt + 1}/{self.retry_count})")
-                self.client.submit_single_listen(listen)
-                print(f"Listen submitted: {song_info['title']} by {song_info['artist']} ({song_info.get('album', 'N/A')})")
-                return
-            except Exception as e:
-                print(f"Attempt {attempt + 1}/{self.retry_count} failed: {str(e)}")
-                if attempt < self.retry_count - 1:
-                    print("DEBUG - Waiting before retry")
-                    time.sleep(self.retry_delay)
-
-    def clean_text(self, text):
-        if not text:
-            return ""
-        decoded_text = unescape(text)
-        return decoded_text.strip()
-
     def parse_currentsong(self):
-        print("DEBUG - Starting to parse currentsong file")
+        print("[DEBUG]  Starting to parse currentsong file")
         try:
-            with open(self.currentsong_file, 'r', encoding='utf-8') as f:
+            with open(CURRENTSONG_FILE, 'r', encoding='utf-8') as f:
                 lines = f.readlines()
-                print(f"DEBUG - Read {len(lines)} lines from file")
+                print(f"[DEBUG]  Read {len(lines)} lines from file")
 
             song_info = {
                 "title": None,
@@ -181,102 +102,199 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
             for line in lines:
                 if line.startswith("title="):
                     song_info["title"] = self.clean_text(line.split("=", 1)[1])
-                    print(f"DEBUG - Found title: {song_info['title']}")
+                    print(f"[DEBUG]  Found title: {song_info['title']}")
                 elif line.startswith("artist="):
                     song_info["artist"] = self.clean_text(line.split("=", 1)[1])
-                    print(f"DEBUG - Found artist: {song_info['artist']}")
+                    print(f"[DEBUG]  Found artist: {song_info['artist']}")
                 elif line.startswith("album="):
                     song_info["album"] = self.clean_text(line.split("=", 1)[1])
-                    print(f"DEBUG - Found album: {song_info['album']}")
+                    print(f"[DEBUG]  Found album: {song_info['album']}")
                 elif line.startswith("state="):
                     song_info["state"] = self.clean_text(line.split("=", 1)[1])
-                    print(f"DEBUG - Found state: {song_info['state']}")
+                    print(f"[DEBUG]  Found state: {song_info['state']}")
 
             if not song_info["title"] or not song_info["artist"]:
-                print("DEBUG - Incomplete song info detected")
+                print("[DEBUG]  Incomplete song info detected")
                 return None
 
-            print("DEBUG - Successfully parsed song info")
+            print("[DEBUG]  Successfully parsed song info")
             return song_info
 
         except Exception as e:
-            print(f"DEBUG - Error parsing song information: {str(e)}")
+            print(f"[ERROR]  Error parsing song information: {str(e)}")
             return None
 
-    def handle_song_update(self, song_info):
-        print("DEBUG - Entering handle_song_update")
-        if not song_info:
-            print("DEBUG - No song info provided")
+    def submit_playing_now(self, song_info):
+        if not ENABLE_LISTENING_NOW:
+            print("[DEBUG]  Listening Now feature disabled")
+            return True
+
+        try:
+            print("[DEBUG]  Submitting Now Playing status...")
+            listen = Listen(
+                track_name=song_info['title'],
+                artist_name=song_info['artist'],
+                release_name=song_info.get('album', '')
+            )
+            self.client.submit_playing_now(listen)
+            print(f"[OK]     Now Playing: {song_info['title']} by {song_info['artist']}")
+            return True
+        except Exception as e:
+            print(f"[ERROR]  Failed to submit Now Playing: {e}")
+            return False
+
+    def submit_listen(self, song_info):
+        print("[DEBUG]  Entering submit_listen")
+        if not ENABLE_LISTEN:
+            print("[DEBUG]  Listen submission disabled")
             return
 
-        print(f"DEBUG - Processing state: {song_info.get('state', 'unknown')}")
+        current_time = time.time()
+        play_time = current_time - self.play_start_time if self.play_start_time else 0
+        print(f"[DEBUG]  Calculated play time: {int(play_time)}s")
+
+        if play_time < MIN_PLAY_TIME:
+            print(f"[INFO]   Song skipped: {song_info['title']} (played for {int(play_time)}s, minimum required: {MIN_PLAY_TIME}s)")
+            return
+
+        print(f"[DEBUG]  Creating Listen object for submission")
+        listen = Listen(
+            track_name=song_info['title'],
+            artist_name=song_info['artist'],
+            release_name=song_info.get('album', ''),
+            listened_at=int(current_time)
+        )
+
+        for attempt in range(self.retry_count):
+            try:
+                print(f"[DEBUG]  Attempting submission (attempt {attempt + 1}/{self.retry_count})")
+                self.client.submit_single_listen(listen)
+                print(f"[INFO]   Listen submitted: {song_info['title']} by {song_info['artist']} ({song_info.get('album', 'N/A')})")
+                return
+            except Exception as e:
+                print(f"[ERROR]  Attempt {attempt + 1}/{self.retry_count} failed: {str(e)}")
+                if attempt < self.retry_count - 1:
+                    print("[DEBUG]  Waiting before retry")
+                    time.sleep(2)
+
+    def clean_text(self, text):
+        if not text:
+            return ""
+        decoded_text = unescape(text)
+        return decoded_text.strip()
+
+    def handle_song_update(self, song_info):
+        print("[DEBUG]  Processing song update...")
+        if not song_info:
+            print("[DEBUG]  No song metadata available")
+            return
+
+        if self.is_radio_content(song_info):
+            return
+
+        print(f"[DEBUG]  Current playback state: {song_info.get('state', 'unknown')}")
 
         if song_info.get("state") != "play":
-            print("DEBUG - State is not 'play'")
+            print("[DEBUG]  Playback is not in play state")
             if self.current_song:
-                print(f"Playback paused/stopped: {self.current_song['title']}")
-                print("DEBUG - Resetting current song and play time")
+                print(f"[INFO]   Playback stopped: {self.current_song['title']}")
+                print("[DEBUG]  Resetting playback tracking")
                 self.current_song = None
                 self.play_start_time = None
             return
 
         if song_info != self.current_song:
-            print("DEBUG - New song detected")
-            if self.settings["features"]["enable_listening_now"]:
-                print("DEBUG - Submitting Listening Now")
+            print("[DEBUG]  New track detected")
+            if ENABLE_LISTENING_NOW:
+                print("[DEBUG]  Updating Now Playing status")
                 self.submit_playing_now(song_info)
 
-            print("DEBUG - Updating play start time and current song")
+            print("[DEBUG]  Starting playback tracking")
             self.play_start_time = time.time()
             self.current_song = song_info
 
-            if self.settings["features"]["enable_listen"]:
-                print("DEBUG - Starting delayed submit thread")
+            if ENABLE_LISTEN:
+                print("[DEBUG]  Initiating scrobble delay")
                 Thread(target=self._delayed_submit, args=(song_info,), daemon=True).start()
 
     def _delayed_submit(self, song_info):
-        print(f"DEBUG - Starting delayed submit for: {song_info['title']}")
-        time.sleep(self.min_play_time)
-        print(f"DEBUG - Delay completed, submitting listen for: {song_info['title']}")
+        print(f"[DEBUG]  Starting delayed submit for: {song_info['title']}")
+        time.sleep(MIN_PLAY_TIME)
+        print(f"[DEBUG]  Delay completed, submitting listen for: {song_info['title']}")
         self.submit_listen(song_info)
 
     def handle_initial_song(self):
         song_info = self.parse_currentsong()
         if song_info and song_info.get("state") == "play":
-            if self.settings["features"]["enable_listening_now"]:
+            if self.settings['features'].get('ignore_radio', True):
+                is_radio = (
+                    song_info.get('artist') == "Radio station" or 
+                    'radio' in song_info.get('album', '').lower() or
+                    'stream' in song_info.get('album', '').lower()
+                )
+                if is_radio:
+                    print(f"[DEBUG]  Ignoring initial radio content: {song_info.get('title')} ({song_info.get('album')})")
+                    return
+
+            if ENABLE_LISTENING_NOW:
                 self.submit_playing_now(song_info)
 
             self.current_song = song_info
             self.play_start_time = time.time()
 
-            if self.settings["features"]["enable_listen"]:
-                Thread(target=self._delayed_submit, args=(song_info,)).start()
+            if ENABLE_LISTEN:
+                Thread(target=self._delayed_submit, args=(song_info,), daemon=True).start()
 
     def on_modified(self, event):
-        print("DEBUG - File modification detected")
-        if event.src_path == self.currentsong_file:
-            print("DEBUG - Currentsong file changed, handling update")
+        print("[DEBUG]  File modification detected")
+        if event.src_path == CURRENTSONG_FILE:
+            print("[DEBUG]  Currentsong file changed, handling update")
             self.handle_song_update(self.parse_currentsong())
 
+    def load_settings(self):
+        try:
+            with open(os.path.join(os.path.dirname(__file__), 'settings.json'), 'r') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Error loading settings: {e}")
+            return None
+
+    def is_radio_content(self, song_info):
+        if self.settings['features'].get('ignore_radio', True):
+            is_radio = (
+                song_info.get('artist') == "Radio station" or 
+                'radio' in song_info.get('album', '').lower() or
+                'stream' in song_info.get('album', '').lower()
+            )
+            if is_radio:
+                print(f"[DEBUG]  Ignoring radio content: {song_info.get('title')} ({song_info.get('album')})")
+                return True
+        return False
 
 def main():
-    print("\nlistenbrainz-moode-scrobbler")
-    print("============================\n")
+    scrobbler = ListenBrainzScrobbler(LISTENBRAINZ_TOKEN)
+    
+    print("[INFO]   ListenBrainz Moode Scrobbler")
+    print("[INFO]   ============================\n")
+    
+    print("[WAIT]   Initializing scrobbler...")
+    print("[DEBUG]  Setting up cache system...")
+    print("[OK]     Initialization complete\n")
 
-    scrobbler = ListenBrainzScrobbler()
-    print("Establishing connection...")
+    print("[WAIT]   Validating ListenBrainz token...")
     scrobbler.validate_token()
+    print("[OK]     Token validated successfully\n")
 
     scrobbler.handle_initial_song()
 
     event_handler = FileSystemEventHandler()
     event_handler.on_modified = scrobbler.on_modified
     observer = Observer()
-    observer.schedule(event_handler, path=os.path.dirname(scrobbler.currentsong_file), recursive=False)
+    observer.schedule(event_handler, path=os.path.dirname(CURRENTSONG_FILE), recursive=False)
     observer.start()
 
     try:
-        print("Scrobbler is now running. Waiting for updates...")
+        print("[INFO]   Scrobbler is now running. Waiting for updates...")
         while True:
             time.sleep(1)
     except KeyboardInterrupt:

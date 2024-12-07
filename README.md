@@ -20,12 +20,16 @@ This script monitors tracks played on moOde audio player and sends them to Liste
 ## Project Structure
 
 ```
-lbms/
-├── __init__.py
-├── main.py
+listenbrainz-moode-scrobbler/
+├── LICENSE
 ├── README.md
 ├── requirements.txt
-└── setup.py
+├── setup.py
+└── src/
+    ├── __init__.py
+    ├── main.py
+    ├── pending_listens.json
+    └── settings.json
 ```
 
 ## moOde Configuration
@@ -42,18 +46,37 @@ lbms/
 ### From Source
 1. Clone this repository:
 ```bash
-git clone https://github.com/your-username/listenbrainz-moode-script.git
-cd listenbrainz-moode-script
+git clone https://github.com/your-username/listenbrainz-moode-scrobbler.git
+cd listenbrainz-moode-scrobbler
 ```
 
-2. Install in development mode:
+2. Create and activate a virtual environment:
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+3. Install in development mode:
 ```bash
 pip install -e .
 ```
 
 ### Using pip
+1. Create project directory:
 ```bash
-pip install listenbrainz-moode-script
+mkdir listenbrainz-moode-scrobbler
+cd listenbrainz-moode-scrobbler
+```
+
+2. Create and activate a virtual environment:
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+3. Install via pip:
+```bash
+pip install listenbrainz-moode-scrobbler
 ```
 
 ## Configuration
@@ -146,7 +169,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - [moOde audio player](https://moodeaudio.org/) team
 - [ListenBrainz](https://listenbrainz.org/) project
-- All contributors and users of this script
+- Members of the moOde audio forum for their support and feedback
 
 ## Support
 

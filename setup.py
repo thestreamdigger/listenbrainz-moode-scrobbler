@@ -19,7 +19,7 @@ setup(
         "Development Status :: 3 - Alpha",
         "Intended Audience :: End Users/Desktop",
         "Topic :: Multimedia :: Sound/Audio",
-        "License :: OSI Approved :: MIT License",
+        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
@@ -31,11 +31,11 @@ setup(
     install_requires=requirements,
     entry_points={
         "console_scripts": [
-            "lbms=src.main:main",
+            "listenbrainz-moode=src.main:main",
         ],
     },
     include_package_data=True,
     package_data={
-        "src": ["pending_listens.json"],
+        "src": ["pending_listens.json", "settings.json"],
     },
 ) 

@@ -274,7 +274,7 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
 def main():
     scrobbler = ListenBrainzScrobbler(LISTENBRAINZ_TOKEN)
     
-    print("[INFO]   ListenBrainz Moode Scrobbler")
+    print("[INFO]   ListenBrainz moOde Scrobbler")
     print("[INFO]   ============================\n")
     
     print("[WAIT]   Initializing scrobbler...")

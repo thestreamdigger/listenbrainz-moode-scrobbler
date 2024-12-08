@@ -1,17 +1,18 @@
+```markdown
 # ListenBrainz moOde Scrobbler
 
-A Python script to integrate moOde audio player (for Raspberry Pi) with ListenBrainz, enabling automatic scrobbling of played tracks.
+A Python script that integrates the moOde audio player (for Raspberry Pi) with ListenBrainz, providing automatic track scrobbling to keep your listening history continuously updated.
 
 ## About
 
-This script monitors tracks played on moOde audio player and sends them to ListenBrainz, keeping your listening history up to date. Key features include:
+This script monitors the tracks currently playing on moOde and sends them to ListenBrainz. Key functionalities include:
 
-- **"Now Playing" status submission** (real-time updates)
-- **Track scrobbling** after configurable minimum play time
-- **Offline support** with local cache and automatic retry
-- **Automatic track metadata reading** (title, artist, album)
-- **Radio station filtering** (optional)
-- Configurable retry mechanism
+- **Real-time "Now Playing" updates** to ListenBrainz
+- **Smart scrobbling** after a configurable minimum play duration
+- **Offline caching** with automatic retries
+- **Automatic metadata extraction** (title, artist, album)
+- **Filtering of radio stations** (optional)
+- Flexible retry settings
 - Detailed debug logging
 - UTF-8 metadata support
 
@@ -20,33 +21,33 @@ This script monitors tracks played on moOde audio player and sends them to Liste
 ## Key Features
 
 ### Real-time Updates
-- Monitors moOde's metadata file for changes.
-- Instantly updates "Now Playing" status on ListenBrainz.
-- Reflects current track information on your profile.
+- Continuously monitors moOde’s metadata file for changes.
+- Instantly updates your "Now Playing" status on ListenBrainz.
+- Ensures your currently playing track is always displayed on your profile.
 
 ### Smart Scrobbling
-- Configurable minimum play time before scrobbling.
-- Optional filtering for radio or stream content.
-- Accurate timestamp recording.
+- Configurable minimum playback time before submitting a scrobble.
+- Optional filtering of radio or stream content.
+- Precise timestamping for accurate play history.
 
 ### Offline Support
-- Local caching of failed submissions.
-- Automatic retry when connection is restored.
-- Persistent storage of pending scrobbles.
-- Reliable queue management.
+- Automatically stores failed submissions locally.
+- Retries submissions once the connection is restored.
+- Keeps a persistent queue of pending scrobbles.
+- Reliable scrobbling even under unstable network conditions.
 
 ### Easy Configuration
-- JSON-based settings file.
-- Adjustable features and behaviors.
-- Simple token-based authentication.
+- JSON-based configuration file for simple customization.
+- Adjustable features and behavior.
+- Token-based authentication for ListenBrainz.
 
 ---
 
 ## Prerequisites
 
-- moOde audio player installed.
-- Python 3.6 or higher.
-- ListenBrainz account and API token.
+- moOde audio player installed on a Raspberry Pi.
+- Python 3.6 or later.
+- A ListenBrainz account and API token.
 
 ---
 
@@ -70,10 +71,10 @@ listenbrainz-moode-scrobbler/
 ## moOde Configuration
 
 1. Access the moOde web interface.
-2. Navigate to **Configure > Audio**.
+2. Go to **Configure > Audio**.
 3. Enable the **Metadata file** option:
-   - Generates `/var/local/www/currentsong.txt`.
-   - The script monitors this file for metadata updates.
+   - This generates `/var/local/www/currentsong.txt`.
+   - The script monitors this file for updates.
 
 ---
 
@@ -102,9 +103,9 @@ listenbrainz-moode-scrobbler/
 
 ## Configuration
 
-1. Retrieve your ListenBrainz token:
+1. Obtain your ListenBrainz token:
    - Log in to [ListenBrainz](https://listenbrainz.org).
-   - Access **Profile Settings** and copy your token.
+   - Go to **Profile Settings** and copy your token.
 
 2. Configure the `settings.json` file:
    ```json
@@ -137,7 +138,7 @@ listenbrainz-moode-scrobbler/
 
 ## Usage
 
-### Running as a Service (Recommended)
+### Running as a Systemd Service
 
 1. Create a systemd service file:
    ```bash
@@ -188,26 +189,19 @@ listenbrainz-moode-scrobbler/
 ### Common Issues
 
 1. **Metadata file not updating:**
-   - Confirm moOde metadata file option is enabled.
-   - Check file permissions on `/var/local/www/currentsong.txt`.
+   - Confirm that moOde’s metadata file option is enabled.
+   - Check file permissions for `/var/local/www/currentsong.txt`.
 
-2. **Token validation fails:**
+2. **Token validation failure:**
    - Verify your ListenBrainz token.
    - Check your internet connection.
 
 3. **Scrobbles not appearing:**
-   - Verify minimum play time.
-   - Ensure metadata is complete.
+   - Ensure the configured minimum play time is sufficient.
+   - Verify that the track metadata is complete.
 
 ---
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
-## Support
-
-For help:
-1. Check the **Troubleshooting** section.
-2. Review existing GitHub issues.
-3. Create a new issue with detailed information.
+This project is licensed under the GNU License. Refer to the [LICENSE](LICENSE) file for details.

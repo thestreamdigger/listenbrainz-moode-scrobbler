@@ -74,7 +74,7 @@ listenbrainz-moode-scrobbler/
 ### From Source
 1. Clone this repository:
 ```bash
-git clone https://github.com/your-username/listenbrainz-moode-scrobbler.git
+git clone https://github.com/thestreamdigger/listenbrainz-moode-scrobbler.git
 cd listenbrainz-moode-scrobbler
 ```
 
@@ -87,24 +87,6 @@ source venv/bin/activate
 3. Install in development mode:
 ```bash
 pip install -e .
-```
-
-### Using pip
-1. Create project directory:
-```bash
-mkdir listenbrainz-moode-scrobbler
-cd listenbrainz-moode-scrobbler
-```
-
-2. Create and activate a virtual environment:
-```bash
-python3 -m venv venv
-source venv/bin/activate
-```
-
-3. Install via pip:
-```bash
-pip install listenbrainz-moode-scrobbler
 ```
 
 ## Configuration

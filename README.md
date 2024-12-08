@@ -1,4 +1,3 @@
-```markdown
 # ListenBrainz moOde Scrobbler
 
 A Python script that integrates the moOde audio player (for Raspberry Pi) with ListenBrainz, providing automatic track scrobbling to keep your listening history continuously updated.

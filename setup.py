@@ -7,7 +7,7 @@ with open("requirements.txt", "r", encoding="utf-8") as fh:
     requirements = [line.strip() for line in fh if line.strip() and not line.startswith("#")]
 
 setup(
-    name="listenbrainz-moode-scrobbler",
+    name="listenbrainz-moOde-scrobbler",
     version="0.1.0",
     author="StreamDigger",
     description="A ListenBrainz scrobbler for moOde audio player",

@@ -8,15 +8,6 @@ from watchdog.events import FileSystemEventHandler
 from liblistenbrainz import ListenBrainz, Listen
 from threading import Thread
 
-CURRENTSONG_FILE = '/var/local/www/currentsong.txt'
-LISTENBRAINZ_TOKEN = '80c6acc0-b7f3-4ddc-bef2-4e7fdb317f51'
-MIN_PLAY_TIME = 30
-CACHE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pending_listens.json')
-
-ENABLE_LISTENING_NOW = True
-ENABLE_LISTEN = True
-ENABLE_CACHE = True
-
 
 class ListenCache:
     def __init__(self, cache_file):
@@ -69,14 +60,21 @@ class ListenCache:
 
 
 class ListenBrainzScrobbler(FileSystemEventHandler):
-    def __init__(self, token):
+    def __init__(self):
         self.client = ListenBrainz()
-        self.token = token
-        self.listen_cache = ListenCache(CACHE_FILE) if ENABLE_CACHE else None
+        self.settings = self.load_settings()
+        self.token = self.settings['listenbrainz_token']
+        
+        cache_file = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), 
+            self.settings['cache_file']
+        )
+        
+        self.listen_cache = ListenCache(cache_file) if self.settings['features']['enable_cache'] else None
         self.current_song = None
         self.play_start_time = None
-        self.retry_count = 3
-        self.settings = self.load_settings()
+        self.retry_count = self.settings['retry']['count']
+        self.retry_delay = self.settings['retry']['delay']
 
     def validate_token(self):
         try:
@@ -88,7 +86,7 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
     def parse_currentsong(self):
         print("[DEBUG]  Starting to parse currentsong file")
         try:
-            with open(CURRENTSONG_FILE, 'r', encoding='utf-8') as f:
+            with open(self.settings['currentsong_file'], 'r', encoding='utf-8') as f:
                 lines = f.readlines()
                 print(f"[DEBUG]  Read {len(lines)} lines from file")
 
@@ -125,7 +123,7 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
             return None
 
     def submit_playing_now(self, song_info):
-        if not ENABLE_LISTENING_NOW:
+        if not self.settings['features']['enable_listening_now']:
             print("[DEBUG]  Listening Now feature disabled")
             return True
 
@@ -145,7 +143,7 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
 
     def submit_listen(self, song_info):
         print("[DEBUG]  Entering submit_listen")
-        if not ENABLE_LISTEN:
+        if not self.settings['features']['enable_listen']:
             print("[DEBUG]  Listen submission disabled")
             return
 
@@ -153,8 +151,8 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
         play_time = current_time - self.play_start_time if self.play_start_time else 0
         print(f"[DEBUG]  Calculated play time: {int(play_time)}s")
 
-        if play_time < MIN_PLAY_TIME:
-            print(f"[INFO]   Song skipped: {song_info['title']} (played for {int(play_time)}s, minimum required: {MIN_PLAY_TIME}s)")
+        if play_time < self.settings['min_play_time']:
+            print(f"[INFO]   Song skipped: {song_info['title']} (played for {int(play_time)}s, minimum required: {self.settings['min_play_time']}s)")
             return
 
         print(f"[DEBUG]  Creating Listen object for submission")
@@ -175,7 +173,7 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
                 print(f"[ERROR]  Attempt {attempt + 1}/{self.retry_count} failed: {str(e)}")
                 if attempt < self.retry_count - 1:
                     print("[DEBUG]  Waiting before retry")
-                    time.sleep(2)
+                    time.sleep(self.retry_delay)
 
     def clean_text(self, text):
         if not text:
@@ -189,7 +187,7 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
             print("[DEBUG]  No song metadata available")
             return
 
-        if self.is_radio_content(song_info):
+        if self.should_ignore(song_info):
             return
 
         print(f"[DEBUG]  Current playback state: {song_info.get('state', 'unknown')}")
@@ -205,7 +203,7 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
 
         if song_info != self.current_song:
             print("[DEBUG]  New track detected")
-            if ENABLE_LISTENING_NOW:
+            if self.settings['features']['enable_listening_now']:
                 print("[DEBUG]  Updating Now Playing status")
                 self.submit_playing_now(song_info)
 
@@ -213,41 +211,33 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
             self.play_start_time = time.time()
             self.current_song = song_info
 
-            if ENABLE_LISTEN:
+            if self.settings['features']['enable_listen']:
                 print("[DEBUG]  Initiating scrobble delay")
                 Thread(target=self._delayed_submit, args=(song_info,), daemon=True).start()
 
     def _delayed_submit(self, song_info):
         print(f"[DEBUG]  Starting delayed submit for: {song_info['title']}")
-        time.sleep(MIN_PLAY_TIME)
+        time.sleep(self.settings['min_play_time'])
         print(f"[DEBUG]  Delay completed, submitting listen for: {song_info['title']}")
         self.submit_listen(song_info)
 
     def handle_initial_song(self):
         song_info = self.parse_currentsong()
         if song_info and song_info.get("state") == "play":
-            if self.settings['features'].get('ignore_radio', True):
-                is_radio = (
-                    song_info.get('artist') == "Radio station" or 
-                    'radio' in song_info.get('album', '').lower() or
-                    'stream' in song_info.get('album', '').lower()
-                )
-                if is_radio:
-                    print(f"[DEBUG]  Ignoring initial radio content: {song_info.get('title')} ({song_info.get('album')})")
-                    return
+            if self.should_ignore(song_info):
+                return
 
-            if ENABLE_LISTENING_NOW:
+            if self.settings['features']['enable_listening_now']:
                 self.submit_playing_now(song_info)
 
             self.current_song = song_info
             self.play_start_time = time.time()
 
-            if ENABLE_LISTEN:
+            if self.settings['features']['enable_listen']:
                 Thread(target=self._delayed_submit, args=(song_info,), daemon=True).start()
 
     def on_modified(self, event):
-        print("[DEBUG]  File modification detected")
-        if event.src_path == CURRENTSONG_FILE:
+        if event.src_path == self.settings['currentsong_file']:
             print("[DEBUG]  Currentsong file changed, handling update")
             self.handle_song_update(self.parse_currentsong())
 
@@ -259,10 +249,7 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
             print(f"Error loading settings: {e}")
             return None
 
-    def is_radio_content(self, song_info):
-        if not self.settings['features'].get('ignore_radio', True):
-            return False
-
+    def should_ignore(self, song_info):
         filters = self.settings.get('filters', {})
         ignore_patterns = filters.get('ignore_patterns', {})
         case_sensitive = filters.get('case_sensitive', False)
@@ -285,25 +272,23 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
         return False
 
 def main():
-    scrobbler = ListenBrainzScrobbler(LISTENBRAINZ_TOKEN)
+    scrobbler = ListenBrainzScrobbler()
     
     print("[INFO]   ListenBrainz moOde Scrobbler")
-    print("[INFO]   ============================\n")
-    
-    print("[WAIT]   Initializing scrobbler...")
-    print("[DEBUG]  Setting up cache system...")
-    print("[OK]     Initialization complete\n")
-
+    print("[INFO]   ============================")
+ 
     print("[WAIT]   Validating ListenBrainz token...")
     scrobbler.validate_token()
-    print("[OK]     Token validated successfully\n")
+    print("[OK]     Token validated successfully")
 
     scrobbler.handle_initial_song()
 
-    event_handler = FileSystemEventHandler()
-    event_handler.on_modified = scrobbler.on_modified
     observer = Observer()
-    observer.schedule(event_handler, path=os.path.dirname(CURRENTSONG_FILE), recursive=False)
+    observer.schedule(
+        scrobbler, 
+        path=os.path.dirname(scrobbler.settings['currentsong_file']), 
+        recursive=False
+    )
     observer.start()
 
     try:

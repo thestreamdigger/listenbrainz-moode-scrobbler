@@ -116,18 +116,18 @@ pip install listenbrainz-moode-scrobbler
 
 2. Configure your settings:
    - Open `src/settings.json`
-   - Replace `"your-token-here"` with your personal ListenBrainz token
+   - Replace `"your_listenbrainz_token"` with your personal ListenBrainz token
    - Adjust other settings if needed:
      ```json
      {
-         "listenbrainz_token": "your-token-here",
+         "listenbrainz_token": "your_listenbrainz_token",
          "currentsong_file": "/var/local/www/currentsong.txt",
          "min_play_time": 30,
          "features": {
              "enable_listening_now": true,
              "enable_listen": true,
              "enable_cache": true,
-             "ignore_radio": true
+-            "ignore_radio": true
          },
          "filters": {
              "ignore_patterns": {
@@ -155,7 +155,6 @@ The `settings.json` file allows you to customize:
   - `enable_listening_now`: Enable/disable "Now Playing" status
   - `enable_listen`: Enable/disable scrobbling
   - `enable_cache`: Enable/disable local cache
-  - `ignore_radio`: Enable/disable radio station filtering
 - `filters`:
   - `ignore_patterns`: Patterns to ignore in metadata fields
     - `artist`: List of artist names to ignore

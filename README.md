@@ -80,12 +80,20 @@ listenbrainz-moode-scrobbler/
 ## Installation
 
 ### From Source
+<<<<<<< HEAD
 
 1. Clone the repository:
    ```bash
    git clone https://github.com/thestreamdigger/listenbrainz-moode-scrobbler.git
    cd listenbrainz-moode-scrobbler
    ```
+=======
+1. Clone this repository:
+```bash
+git clone https://github.com/thestreamdigger/listenbrainz-moode-scrobbler.git
+cd listenbrainz-moode-scrobbler
+```
+>>>>>>> 4608a91060d28af15707af71b44d90673b28ee32
 
 2. Create and activate a virtual environment:
    ```bash
@@ -98,8 +106,11 @@ listenbrainz-moode-scrobbler/
    pip install -e .
    ```
 
+<<<<<<< HEAD
 ---
 
+=======
+>>>>>>> 4608a91060d28af15707af71b44d90673b28ee32
 ## Configuration
 
 1. Retrieve your ListenBrainz token:

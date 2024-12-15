@@ -1,5 +1,5 @@
 {
-    "listenbrainz_token": "your_listenbrainz_token",
+    "listenbrainz_token": "your_token_here",
     "currentsong_file": "/var/local/www/currentsong.txt",
     "min_play_time": 30,
     "cache_file": "pending_listens.json",
@@ -19,5 +19,10 @@
     "retry": {
         "count": 3,
         "delay": 2
+    },
+    "logging": {
+        "enable": true,
+        "level": "INFO",
+        "format": "[{level}] {message}"
     }
 } 

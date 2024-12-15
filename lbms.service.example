@@ -1,0 +1,16 @@
+[Unit]
+Description=ListenBrainz moOde Scrobbler
+After=network.target moode.service
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/listenbrainz-moode-scrobbler
+ExecStart=/usr/bin/python3 src/main.py
+Restart=always
+RestartSec=10
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target 

@@ -1,206 +1,158 @@
 # ListenBrainz moOde Scrobbler
 
-A Python script that integrates the moOde audio player (for Raspberry Pi) with ListenBrainz, providing automatic track scrobbling to keep your listening history continuously updated.
+A simple Python script to integrate the moOde audio player (for Raspberry Pi) with ListenBrainz, enabling automatic scrobbling of played tracks.
 
 ## About
 
-This script monitors the tracks currently playing on moOde and sends them to ListenBrainz. Key functionalities include:
+This script was developed as a hobby project and a learning exercise in Python programming. It monitors tracks played on the moOde audio player and sends them to ListenBrainz, keeping your listening history up to date.
 
-- **Real-time "Now Playing" updates** to ListenBrainz
-- **Smart scrobbling** after a configurable minimum play duration
-- **Offline caching** with automatic retries
-- **Automatic metadata extraction** (title, artist, album)
-- **Filtering of radio stations** (optional)
-- Flexible retry settings
-- Detailed debug logging
-- UTF-8 metadata support
+## Features
 
----
+- Submits "Now Playing" status updates in real-time.
+- Scrobbles tracks after a configurable minimum play time.
+- Caches scrobbles when offline and retries automatically.
+- Reads track metadata (title, artist, album) from moOde.
+- Optional filtering to ignore certain tracks or patterns.
+- Simple JSON configuration file.
 
-## Key Features
+## Requirements
 
-### Real-time Updates
-- Continuously monitors moOde’s metadata file for changes.
-- Instantly updates your "Now Playing" status on ListenBrainz.
-- Ensures your currently playing track is always displayed on your profile.
-
-### Smart Scrobbling
-- Configurable minimum playback time before submitting a scrobble.
-- Optional filtering of radio or stream content.
-- Precise timestamping for accurate play history.
-
-### Offline Support
-- Automatically stores failed submissions locally.
-- Retries submissions once the connection is restored.
-- Keeps a persistent queue of pending scrobbles.
-- Reliable scrobbling even under unstable network conditions.
-
-### Easy Configuration
-- JSON-based configuration file for simple customization.
-- Adjustable features and behavior.
-- Token-based authentication for ListenBrainz.
-
----
-
-## Prerequisites
-
-- moOde audio player installed on a Raspberry Pi.
-- Python 3.6 or later.
-- A ListenBrainz account and API token.
-
----
-
-## Project Structure
-
-```plaintext
-listenbrainz-moode-scrobbler/
-├── LICENSE
-├── README.md
-├── requirements.txt
-├── setup.py
-└── src/
-    ├── __init__.py
-    ├── main.py
-    ├── pending_listens.json
-    └── settings.json
-```
-
----
-
-## moOde Configuration
-
-1. Access the moOde web interface.
-2. Go to **Configure > Audio**.
-3. Enable the **Metadata file** option:
-   - This generates `/var/local/www/currentsong.txt`.
-   - The script monitors this file for updates.
-
----
+- Raspberry Pi running moOde audio player.
+- Python 3.6 or higher.
+- ListenBrainz account and API token.
 
 ## Installation
 
-### From Source
+### 1. Install Dependencies
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/thestreamdigger/listenbrainz-moode-scrobbler.git
-   cd listenbrainz-moode-scrobbler
-   ```
+Ensure that Python 3.6 or higher is installed on your Raspberry Pi.
 
-2. Create and activate a virtual environment:
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
+### 2. Clone the Repository
 
-3. Install in development mode:
-   ```bash
-   pip install -e .
-   ```
+```bash
+git clone https://github.com/your-username/listenbrainz-moode-scrobbler.git
+cd listenbrainz-moode-scrobbler
+```
 
----
+### 3. Set Up a Virtual Environment (Optional but Recommended)
 
-## Configuration
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
 
-1. Obtain your ListenBrainz token:
-   - Log in to [ListenBrainz](https://listenbrainz.org).
-   - Go to **Profile Settings** and copy your token.
+### 4. Install Required Python Packages
 
-2. Configure the `settings.json` file:
-   ```json
-   {
-       "listenbrainz_token": "your_listenbrainz_token",
-       "currentsong_file": "/var/local/www/currentsong.txt",
-       "min_play_time": 30,
-       "features": {
-           "enable_listening_now": true,
-           "enable_listen": true,
-           "enable_cache": true,
-           "ignore_radio": true
-       },
-       "filters": {
-           "ignore_patterns": {
-               "artist": ["Radio station", "Unknown Artist"],
-               "album": ["radio", "stream", "webradio"],
-               "title": ["commercial break", "station id"]
-           },
-           "case_sensitive": false
-       },
-       "retry": {
-           "count": 3,
-           "delay": 2
-       }
-   }
-   ```
+```bash
+pip install -r requirements.txt
+```
 
----
+### 5. Configure moOde
 
-## Usage
+Enable moOde to generate the `currentsong.txt` file:
 
-### Running as a Systemd Service
+1. Access the moOde web interface.
+2. Go to "Configure" > "Audio".
+3. Enable the "Metadata file" option, so moOde creates `/var/local/www/currentsong.txt`.
 
-1. Create a systemd service file:
-   ```bash
-   sudo nano /etc/systemd/system/listenbrainz-moode.service
-   ```
+### 6. Configure the Script
 
-2. Add the following content:
-   ```ini
-   [Unit]
-   Description=ListenBrainz moOde Scrobbler
-   After=network.target moode.service
+1. Rename the example settings file:
 
-   [Service]
-   Type=simple
-   User=pi
-   Group=pi
-   WorkingDirectory=/home/pi/listenbrainz-moode-scrobbler
-   Environment=PATH=/home/pi/listenbrainz-moode-scrobbler/venv/bin:$PATH
-   ExecStart=/home/pi/listenbrainz-moode-scrobbler/venv/bin/python3 /src/main.py
-   Restart=always
-   RestartSec=10
+```bash
+mv src/settings.example.json src/settings.json
+```
 
-   [Install]
-   WantedBy=multi-user.target
-   ```
+2. Edit `src/settings.json`:
 
-3. Enable and start the service:
-   ```bash
-   sudo systemctl daemon-reload
-   sudo systemctl enable listenbrainz-moode
-   sudo systemctl start listenbrainz-moode
-   ```
+- Replace `"your_token_here"` with your ListenBrainz API token.
+- Adjust other settings as needed.
 
-4. Check the service status:
-   ```bash
-   sudo systemctl status listenbrainz-moode
-   ```
+Example:
 
-5. View logs:
-   ```bash
-   sudo journalctl -u listenbrainz-moode -f
-   ```
+```json
+{
+    "listenbrainz_token": "your_token_here",
+    "currentsong_file": "/var/local/www/currentsong.txt",
+    "min_play_time": 30,
+    "cache_file": "pending_listens.json",
+    "features": {
+        "enable_listening_now": true,
+        "enable_listen": true,
+        "enable_cache": true
+    },
+    "filters": {
+        "ignore_patterns": {
+            "artist": ["Radio station", "Unknown Artist"],
+            "album": [],
+            "title": []
+        },
+        "case_sensitive": false
+    },
+    "retry": {
+        "count": 3,
+        "delay": 2
+    },
+    "logging": {
+        "enable": true,
+        "level": "INFO",
+        "format": "[{level}] {message}"
+    }
+}
+```
 
----
+⚠️ **Important**: Never share your `settings.json` file as it contains your personal ListenBrainz token.
 
-## Troubleshooting
+### 7. Run the Script
 
-### Common Issues
+You can run the script manually for testing:
 
-1. **Metadata file not updating:**
-   - Confirm that moOde’s metadata file option is enabled.
-   - Check file permissions for `/var/local/www/currentsong.txt`.
+```bash
+python src/main.py
+```
 
-2. **Token validation failure:**
-   - Verify your ListenBrainz token.
-   - Check your internet connection.
+## Running as a Service
 
-3. **Scrobbles not appearing:**
-   - Ensure the configured minimum play time is sufficient.
-   - Verify that the track metadata is complete.
+To run the scrobbler automatically in the background, set it up as a systemd service:
 
----
+1. Copy the example service file:
+```bash
+sudo cp lbms.service.example /etc/systemd/system/lbms.service
+```
+
+2. Edit the service file if needed (e.g., to adjust paths):
+```bash
+sudo nano /etc/systemd/system/lbms.service
+```
+
+3. Start the service:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable lbms.service
+sudo systemctl start lbms.service
+```
+
+You can check the service status and logs with:
+```bash
+sudo systemctl status lbms.service
+sudo journalctl -u lbms.service -f
+```
+
+## Notes
+
+- Ensure that the user specified in the service file (`User=pi`) has the necessary permissions to read `/var/local/www/currentsong.txt`.
+- If you're using a virtual environment, adjust the `ExecStart` and `Environment` variables accordingly.
+- Make sure the script has execute permissions:
+
+```bash
+chmod +x src/main.py
+```
+
+## Acknowledgments
+
+- This project was created as a fun way to learn more about Python programming and integrating with the ListenBrainz API.
+- Thanks to the moOde audio player and ListenBrainz projects for their great software.
 
 ## License
 
-This project is licensed under the GNU License. Refer to the [LICENSE](LICENSE) file for details.
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.

@@ -34,7 +34,7 @@ git clone https://github.com/your-username/listenbrainz-moode-scrobbler.git
 cd listenbrainz-moode-scrobbler
 ```
 
-### 3. Set Up a Virtual Environment (Optional but Recommended)
+### 3. Set Up a Virtual Environment
 
 ```bash
 python3 -m venv venv

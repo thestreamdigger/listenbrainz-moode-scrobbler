@@ -7,7 +7,7 @@ Type=simple
 User=pi
 Group=pi
 WorkingDirectory=/home/pi/listenbrainz-moode-scrobbler
-ExecStart=/usr/bin/python3 src/main.py
+ExecStart=/home/pi/listenbrainz-moode-scrobbler/venv/bin/python3 /home/pi/listenbrainz-moode-scrobbler/src/main.py
 Restart=always
 RestartSec=10
 Environment=PYTHONUNBUFFERED=1

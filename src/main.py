@@ -143,21 +143,22 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
 
     def submit_playing_now(self, song_info):
         if not self.settings['features']['enable_listening_now']:
-            self.log.debug("Listening Now feature disabled")
+            self.log.debug("Listening now... feature disabled")
             return True
 
         try:
-            self.log.debug("Submitting Now Playing status...")
+            self.log.debug("Submitting Listening now... status")
             listen = Listen(
                 track_name=song_info['title'],
                 artist_name=song_info['artist'],
-                release_name=song_info.get('album', '')
+                release_name=song_info.get('album', ''),
+                listening_from='moOde audio player'
             )
             self.client.submit_playing_now(listen)
-            self.log.info(f"Listening now: {song_info['title']} by {song_info['artist']}")
+            self.log.info(f"Listening now...: {song_info['title']} by {song_info['artist']}")
             return True
         except Exception as e:
-            self.log.error(f"Failed to submit Now Playing: {e}")
+            self.log.error(f"Failed to submit Listening now...: {e}")
             return False
 
     def submit_listen(self, song_info):
@@ -180,7 +181,8 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
             track_name=song_info['title'],
             artist_name=song_info['artist'],
             release_name=song_info.get('album', ''),
-            listened_at=int(current_time)
+            listened_at=int(current_time),
+            listening_from='moOde audio player'
         )
 
         for attempt in range(self.retry_count):
@@ -267,7 +269,7 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
             self.log.debug("Submitting Listening now... status")
             self.submit_playing_now(song_info)
         else:
-            self.log.debug("Now Playing updates disabled, skipping initial status")
+            self.log.debug("Listening now updates disabled, skipping initial status")
 
         self.log.debug("Setting up initial song for scrobbling")
         self.current_song = song_info

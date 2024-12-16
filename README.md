@@ -12,13 +12,12 @@ This script was developed as a hobby project and a learning exercise in Python p
 - Scrobbles tracks after a configurable minimum play time.
 - Caches scrobbles when offline and retries automatically.
 - Reads track metadata (title, artist, album) from moOde.
-- Optional filtering to ignore certain tracks or patterns (radio streams).
+- Optional filtering to ignore certain patterns (good for radio streams).
 - Simple JSON configuration file.
 
 ## Requirements
 
 - Raspberry Pi running moOde audio player.
-- Python 3.6 or higher.
 - ListenBrainz account and API token.
 
 ## Installation
@@ -108,12 +107,12 @@ Example:
 You can run the script manually for testing:
 
 ```bash
-python src/main.py
+python3 src/main.py
 ```
 
 ## Running as a Service
 
-To run the scrobbler automatically in the background, set it up as a systemd service:
+To have the scrobbler run automatically every time moOde starts up, you can set it up as a systemd service. This ensures your scrobbles will be sent automatically without manual intervention after reboots.
 
 1. Copy the example service file:
 ```bash
@@ -125,11 +124,25 @@ sudo cp lbms.service.example /etc/systemd/system/lbms.service
 sudo nano /etc/systemd/system/lbms.service
 ```
 
-3. Start the service:
+3. Configure and start the service:
 ```bash
+# Reload systemd configurations
 sudo systemctl daemon-reload
+
+# Enable service to start automatically at boot
 sudo systemctl enable lbms.service
+
+# Start the service immediately
 sudo systemctl start lbms.service
+```
+
+To disable automatic startup and stop the service:
+```bash
+# Remove automatic startup at boot
+sudo systemctl disable lbms.service
+
+# Stop the service immediately
+sudo systemctl stop lbms.service
 ```
 
 You can check the service status and logs with:

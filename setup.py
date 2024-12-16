@@ -5,6 +5,7 @@ setup(
     version="0.1.0",
     author="StreamDigger",
     description="ListenBrainz scrobbler for moOde audio player",
+    license="GNU General Public License v3.0",
     long_description=open('README.md').read(),
     long_description_content_type="text/markdown",
     packages=find_packages(),
@@ -14,11 +15,6 @@ setup(
         'liblistenbrainz>=0.5.0'
     ],
     package_data={
-        'src': ['settings.json', 'pending_listens.json']
-    },
-    classifiers=[
-        "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)"
-    ],
-    license="GNU General Public License v3.0"
+        'src': ['*.json'],
+    }
 ) 

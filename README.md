@@ -8,7 +8,7 @@ This script was developed as a hobby project and a learning exercise in Python p
 
 ## Features
 
-- Submits "Now Playing" status updates in real-time.
+- Submits "Listening now..." status updates in real-time.
 - Scrobbles tracks after a configurable minimum play time.
 - Caches scrobbles when offline and retries automatically.
 - Reads track metadata (title, artist, album) from moOde.

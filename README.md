@@ -12,7 +12,7 @@ This script was developed as a hobby project and a learning exercise in Python p
 - Scrobbles tracks after a configurable minimum play time.
 - Caches scrobbles when offline and retries automatically.
 - Reads track metadata (title, artist, album) from moOde.
-- Optional filtering to ignore certain tracks or patterns.
+- Optional filtering to ignore certain tracks or patterns (radio streams).
 - Simple JSON configuration file.
 
 ## Requirements

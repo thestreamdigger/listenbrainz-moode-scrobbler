@@ -23,6 +23,7 @@
     "logging": {
         "enable": true,
         "level": "INFO",
-        "format": "[{level}] {message}"
+        "format": "[{level}] {message}",
+        "timestamp": false
     }
 } 

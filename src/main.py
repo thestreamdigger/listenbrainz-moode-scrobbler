@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# ListenBrainz moOde Scrobbler
-# Copyright (C) 2024 StreamDigger
+# ListenBrainz moOde Scrobbler v0.1.0
+# Copyright (C) 2025 Streamdigger
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@ from watchdog.events import FileSystemEventHandler
 from liblistenbrainz import ListenBrainz, Listen
 from threading import Thread
 from logger import Logger
+import threading
 
 
 class ListenCache:
@@ -83,24 +84,45 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
     def __init__(self):
         self.settings = self.load_settings()
         self.log = Logger(self.settings)
-        self.client = ListenBrainz()
+        self.client = None
         self.token = self.settings['listenbrainz_token']
         
-        cache_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cache')
-        cache_dir = os.path.join(cache_dir, 'listenbrainz-moode-scrobbler')
-        
-        self.listen_cache = ListenCache(os.path.join(cache_dir, self.settings['cache_file'])) if self.settings['features']['enable_cache'] else None
         self.current_song = None
         self.play_start_time = None
         self.retry_count = self.settings['retry']['count']
         self.retry_delay = self.settings['retry']['delay']
+        
+        self.listen_cache = None
 
-    def validate_token(self):
+    def initialize(self):
+        self.log.info("ListenBrainz moOde Scrobbler v0.1.0")
+        self.log.info("===================================")
+        
+        self.log.wait("Validating ListenBrainz token...")
         try:
+            self.client = ListenBrainz()
             self.client.set_auth_token(self.token)
+            self.log.ok("Token validated successfully")
         except Exception as e:
             self.log.error(f"Token validation failed - {e}")
-            exit(1)
+            return False
+
+        if self.settings['features']['enable_cache']:
+            cache_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cache')
+            cache_dir = os.path.join(cache_dir, 'listenbrainz-moode-scrobbler')
+            self.listen_cache = ListenCache(os.path.join(cache_dir, self.settings['cache_file']))
+
+        return True
+
+    def check_initial_playback(self):
+        self.log.info("Checking for currently playing track...")
+        initial_song = self.parse_currentsong()
+        
+        if initial_song and initial_song.get("state") == "play":
+            self.log.info(f"Found playing track: {initial_song['title']} by {initial_song['artist']}")
+            self.handle_song_update(initial_song)
+        else:
+            self.log.info("No track currently playing")
 
     def parse_currentsong(self):
         self.log.debug("Starting to parse currentsong file")
@@ -155,7 +177,7 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
                 listening_from='moOde audio player'
             )
             self.client.submit_playing_now(listen)
-            self.log.info(f"Listening now...: {song_info['title']} by {song_info['artist']}")
+            self.log.info(f"Listening now... {song_info['title']} by {song_info['artist']}")
             return True
         except Exception as e:
             self.log.error(f"Failed to submit Listening now...: {e}")
@@ -228,58 +250,25 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
             return
 
         if song_info != self.current_song:
-            self.log.debug("New track detected")
+            self.log.info(f"Track detected: {song_info['title']} by {song_info['artist']}")
+            
             if self.settings['features']['enable_listening_now']:
-                self.log.debug("Updating Listening now.. status")
+                self.log.debug("Submitting Listening now... status")
                 self.submit_playing_now(song_info)
-
-            self.log.debug("Starting playback tracking...")
-            self.play_start_time = time.time()
+            
             self.current_song = song_info
+            self.play_start_time = time.time()
 
             if self.settings['features']['enable_listen']:
-                self.log.debug("Initiating scrobble delay")
+                self.log.debug("Starting scrobble delay")
                 Thread(target=self._delayed_submit, args=(song_info,), daemon=True).start()
 
     def _delayed_submit(self, song_info):
-        self.log.debug(f"Starting delayed submit for: {song_info['title']}...")
+        thread_name = threading.current_thread().name
+        self.log.debug(f"[{thread_name}] Starting delayed submit for: {song_info['title']}...")
         time.sleep(self.settings['min_play_time'])
-        self.log.debug(f"Delay completed, submitting listen...")
+        self.log.debug(f"[{thread_name}] Delay completed, submitting listen...")
         self.submit_listen(song_info)
-
-    def handle_initial_song(self):
-        self.log.debug("Starting initial song detection")
-        song_info = self.parse_currentsong()
-        
-        if not song_info:
-            self.log.debug("No initial song information available")
-            return
-        
-        if song_info.get("state") != "play":
-            self.log.debug("Initial state is not 'play', skipping")
-            return
-
-        if self.should_ignore(song_info):
-            self.log.debug("Initial song matches ignore filters, skipping")
-            return
-
-        self.log.info(f"Initial song detected: {song_info['title']} by {song_info['artist']}")
-
-        if self.settings['features']['enable_listening_now']:
-            self.log.debug("Submitting Listening now... status")
-            self.submit_playing_now(song_info)
-        else:
-            self.log.debug("Listening now updates disabled, skipping initial status")
-
-        self.log.debug("Setting up initial song for scrobbling")
-        self.current_song = song_info
-        self.play_start_time = time.time()
-
-        if self.settings['features']['enable_listen']:
-            self.log.debug("Starting scrobble delay for initial song")
-            Thread(target=self._delayed_submit, args=(song_info,), daemon=True).start()
-        else:
-            self.log.debug("Scrobbling disabled, skipping initial listen")
 
     def on_modified(self, event):
         if event.src_path == self.settings['currentsong_file']:
@@ -324,29 +313,30 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
 def main():
     scrobbler = ListenBrainzScrobbler()
     
-    scrobbler.log.info("ListenBrainz moOde Scrobbler")
-    scrobbler.log.info("============================")
- 
-    scrobbler.log.wait("Validating ListenBrainz token...")
-    scrobbler.validate_token()
-    scrobbler.log.ok("Token validated successfully")
-
-    scrobbler.handle_initial_song()
-
+    if not scrobbler.initialize():
+        scrobbler.log.error("Initialization failed. Exiting...")
+        return
+    
     observer = Observer()
     observer.schedule(
         scrobbler, 
         path=os.path.dirname(scrobbler.settings['currentsong_file']), 
         recursive=False
     )
+    
     observer.start()
-
+    scrobbler.log.info("File monitoring started")
+    
+    scrobbler.check_initial_playback()
+    
+    scrobbler.log.info("Scrobbler is now running. Waiting for updates...")
+    
     try:
-        scrobbler.log.info("Scrobbler is now running. Waiting for updates...")
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
         observer.stop()
+        scrobbler.log.info("Shutting down...")
     observer.join()
 
 

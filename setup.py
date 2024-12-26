@@ -1,10 +1,10 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="listenbrainz-moode-scrobbler",
+    name="lbms",
     version="0.1.0",
-    author="StreamDigger",
-    description="ListenBrainz scrobbler for moOde audio player",
+    author="Streamdigger",
+    description="ListenBrainz moOde Scrobbler",
     license="GNU General Public License v3.0",
     long_description=open('README.md').read(),
     long_description_content_type="text/markdown",

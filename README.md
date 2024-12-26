@@ -1,4 +1,5 @@
 # ListenBrainz moOde Scrobbler
+Version 0.1.0
 
 Python scripts to integrate the moOde audio player (for Raspberry Pi) with ListenBrainz, enabling automatic scrobbling of played tracks.
 
@@ -29,8 +30,8 @@ Ensure that Python 3.6 or higher is installed on your Raspberry Pi.
 ### 2. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/listenbrainz-moode-scrobbler.git
-cd listenbrainz-moode-scrobbler
+git clone https://github.com/thestreamdigger/listenbrainz-moode-scrobbler.git lbms
+cd lbms
 ```
 
 ### 3. Set Up a Virtual Environment
@@ -64,43 +65,56 @@ mv src/settings.example.json src/settings.json
 
 2. Edit `src/settings.json`:
 
-- Replace `"your_token_here"` with your ListenBrainz API token.
-- Adjust other settings as needed.
-
 Example:
 
 ```json
 {
+    // Your ListenBrainz user token (required)
     "listenbrainz_token": "your_token_here",
+
+    // Path to moOde's current song info file
     "currentsong_file": "/var/local/www/currentsong.txt",
+
+    // Minimum seconds a track must play before scrobbling
     "min_play_time": 30,
+
+    // File to store pending scrobbles when offline
     "cache_file": "pending_listens.json",
+
+    // Feature toggles
     "features": {
-        "enable_listening_now": true,
-        "enable_listen": true,
-        "enable_cache": true
+        "enable_listening_now": true,    // Send "now playing" updates
+        "enable_listen": true,    // Enable scrobbling
+        "enable_cache": true    // Save failed scrobbles to retry later
     },
+
+    // Content filtering options
     "filters": {
         "ignore_patterns": {
-            "artist": ["Radio station", "Unknown Artist"],
-            "album": [],
-            "title": []
+            "artist": ["Radio station", "Unknown Artist"],  // Skip these artists
+            "album": [],    // Skip tracks from these albums
+            "title": []    // Skip tracks with these titles
         },
-        "case_sensitive": false
+        "case_sensitive": false    // Case-sensitive pattern matching
     },
+
+    // Network retry settings
     "retry": {
-        "count": 3,
-        "delay": 2
+        "count": 3,    // Number of retry attempts
+        "delay": 2     // Seconds between retries
     },
+
+    // Logging configuration
     "logging": {
-        "enable": true,
-        "level": "INFO",
-        "format": "[{level}] {message}"
+        "enable": true,    // Enable/disable logging
+        "level": "INFO",    // DEBUG, INFO, WARNING, ERROR, CRITICAL
+        "format": "[{level}] {message}",    // Log message format
+        "timestamp": false    // Add timestamps to logs
     }
 }
 ```
 
-⚠️ **Important**: Never share your `settings.json` file as it contains your personal ListenBrainz token.
+**Important**: Never share your `settings.json` file as it contains your personal ListenBrainz token.
 
 ### 7. Run the Script
 
@@ -168,4 +182,4 @@ chmod +x src/main.py
 
 ## License
 
-This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+This project is free software: you can freely use, modify, and share it. It is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.

@@ -6,8 +6,8 @@ After=network.target moode.service
 Type=simple
 User=pi
 Group=pi
-WorkingDirectory=/home/pi/listenbrainz-moode-scrobbler
-ExecStart=/home/pi/listenbrainz-moode-scrobbler/venv/bin/python3 /home/pi/listenbrainz-moode-scrobbler/src/main.py
+WorkingDirectory=/home/pi/lbms
+ExecStart=/home/pi/lbms/venv/bin/python3 /home/pi/lbms/src/main.py
 Restart=always
 RestartSec=10
 Environment=PYTHONUNBUFFERED=1

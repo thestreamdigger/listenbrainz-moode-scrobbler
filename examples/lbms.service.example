@@ -1,0 +1,16 @@
+[Unit]
+Description=ListenBrainz moOde Scrobbler
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/lbms
+ExecStart=/home/pi/lbms/venv/bin/python3 /home/pi/lbms/src/main.py
+Restart=always
+RestartSec=10
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target 

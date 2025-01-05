@@ -1,36 +1,17 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-#
-# ListenBrainz moOde Scrobbler - Logger Module v0.1.0
-# Copyright (C) 2024 StreamDigger
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <https://www.gnu.org/licenses/>.
-
 import logging
 from threading import Lock
-import threading
 from datetime import datetime
 
 class Logger:
     LEVELS = {
-        "DEBUG": logging.DEBUG,      # 10
-        "INFO": logging.INFO,        # 20
-        "WARNING": logging.WARNING,  # 30
-        "ERROR": logging.ERROR,      # 40
-        "CRITICAL": logging.CRITICAL,# 50
-        "WAIT": logging.INFO + 1,    # 21
-        "OK": logging.INFO + 2       # 22
+        "DEBUG": logging.DEBUG,
+        "INFO": logging.INFO,
+        "WARNING": logging.WARNING,
+        "ERROR": logging.ERROR,
+        "CRITICAL": logging.CRITICAL,
+        "WAIT": logging.INFO + 1,
+        "OK": logging.INFO + 2
     }
 
     def __init__(self, settings=None):
@@ -40,7 +21,7 @@ class Logger:
         self.timestamp = False
         self._lock = Lock()
         
-        if settings:
+        if settings and 'logging' in settings:
             logging_settings = settings.get('logging', {})
             self.enabled = logging_settings.get('enable', True)
             self.level = logging_settings.get('level', 'INFO').upper()
@@ -73,4 +54,7 @@ class Logger:
     def wait(self, message): self._log("WAIT", message)
     def ok(self, message): self._log("OK", message)
     def warning(self, message): self._log("WARNING", message)
-    def error(self, message): self._log("ERROR", message) 
+    def error(self, message): self._log("ERROR", message)
+    def print(self, message):
+        """Print a message without any prefix"""
+        print(message) 

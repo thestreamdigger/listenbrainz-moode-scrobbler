@@ -83,33 +83,33 @@ Example:
 
     // Feature toggles
     "features": {
-        "enable_listening_now": true,    // Send "now playing" updates
-        "enable_listen": true,    // Enable scrobbling
-        "enable_cache": true    // Save failed scrobbles to retry later
+        "enable_listening_now": true,       // Send "now playing" updates
+        "enable_listen": true,              // Enable scrobbling
+        "enable_cache": true                // Save failed scrobbles to retry later
     },
 
     // Content filtering options
     "filters": {
         "ignore_patterns": {
             "artist": ["Radio station", "Unknown Artist"],  // Skip these artists
-            "album": [],    // Skip tracks from these albums
-            "title": []    // Skip tracks with these titles
+            "album": [],                    // Skip tracks from these albums
+            "title": []                     // Skip tracks with these titles
         },
-        "case_sensitive": false    // Case-sensitive pattern matching
+        "case_sensitive": false             // Case-sensitive pattern matching
     },
 
     // Network retry settings
     "retry": {
-        "count": 3,    // Number of retry attempts
-        "delay": 2     // Seconds between retries
+        "count": 3,                         // Number of retry attempts
+        "delay": 2                          // Seconds between retries
     },
 
     // Logging configuration
     "logging": {
-        "enable": true,    // Enable/disable logging
-        "level": "INFO",    // DEBUG, INFO, WARNING, ERROR, CRITICAL
+        "enable": true,                     // Enable/disable logging
+        "level": "INFO",                    // DEBUG, INFO, WARNING, ERROR, CRITICAL
         "format": "[{level}] {message}",    // Log message format
-        "timestamp": false    // Add timestamps to logs
+        "timestamp": false                  // Add timestamps to logs
     }
 }
 ```

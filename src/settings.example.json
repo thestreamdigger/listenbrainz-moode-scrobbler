@@ -24,6 +24,6 @@
         "enable": true,
         "level": "INFO",
         "format": "[{level}] {message}",
-        "timestamp": false
+        "timestamp": true
     }
 } 

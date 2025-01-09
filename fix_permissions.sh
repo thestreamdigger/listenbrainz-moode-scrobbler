@@ -61,7 +61,11 @@ chmod 644 "$BASE_DIR/LICENSE"        # License information
 chmod 644 "$BASE_DIR/requirements.txt"  # Python dependencies
 chmod 644 "$BASE_DIR/setup.py"       # Installation script
 chmod 644 "$BASE_DIR/.gitignore"     # Git configuration
-chmod 644 "$BASE_DIR/lbms.service.example"  # Systemd service template
+
+# Configure examples directory
+echo -e "${YELLOW}Configuring examples directory${NC}"
+chmod 755 "$BASE_DIR/examples"       # Make examples directory accessible
+chmod 644 "$BASE_DIR/examples/lbms.service.example"  # Systemd service template
 
 # Configure Python virtual environment if it exists
 # This is where project dependencies are installed

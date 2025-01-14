@@ -37,6 +37,10 @@ cd lbms
 ### 3. Set Up a Virtual Environment
 
 ```bash
+# Install python3-venv package if not already installed
+sudo apt-get install python3-venv
+
+# Create and activate virtual environment
 python3 -m venv venv
 source venv/bin/activate
 ```
@@ -44,8 +48,14 @@ source venv/bin/activate
 ### 4. Install Required Python Packages
 
 ```bash
+# Install project dependencies
 pip install -r requirements.txt
+
+# Install project in development mode
+pip install -e .
 ```
+
+This development mode installation (-e) was used during project testing. It allows you to make code changes and test them immediately without requiring reinstallation.
 
 ### 5. Configure moOde
 
@@ -83,33 +93,33 @@ Example:
 
     // Feature toggles
     "features": {
-        "enable_listening_now": true,    // Send "now playing" updates
-        "enable_listen": true,    // Enable scrobbling
-        "enable_cache": true    // Save failed scrobbles to retry later
+        "enable_listening_now": true,       // Send "now playing" updates
+        "enable_listen": true,              // Enable scrobbling
+        "enable_cache": true                // Save failed scrobbles to retry later
     },
 
     // Content filtering options
     "filters": {
         "ignore_patterns": {
             "artist": ["Radio station", "Unknown Artist"],  // Skip these artists
-            "album": [],    // Skip tracks from these albums
-            "title": []    // Skip tracks with these titles
+            "album": [],                    // Skip tracks from these albums
+            "title": []                     // Skip tracks with these titles
         },
-        "case_sensitive": false    // Case-sensitive pattern matching
+        "case_sensitive": false             // Case-sensitive pattern matching
     },
 
     // Network retry settings
     "retry": {
-        "count": 3,    // Number of retry attempts
-        "delay": 2     // Seconds between retries
+        "count": 3,                         // Number of retry attempts
+        "delay": 2                          // Seconds between retries
     },
 
     // Logging configuration
     "logging": {
-        "enable": true,    // Enable/disable logging
-        "level": "INFO",    // DEBUG, INFO, WARNING, ERROR, CRITICAL
+        "enable": true,                     // Enable/disable logging
+        "level": "INFO",                    // DEBUG, INFO, WARNING, ERROR, CRITICAL
         "format": "[{level}] {message}",    // Log message format
-        "timestamp": false    // Add timestamps to logs
+        "timestamp": false                  // Add timestamps to logs
     }
 }
 ```
@@ -121,8 +131,14 @@ Example:
 You can run the script manually for testing:
 
 ```bash
+# Make sure your virtual environment is active
+source venv/bin/activate
+
+# Run the script
 python3 src/main.py
 ```
+
+Note: The virtual environment must be activated before running the script to ensure all dependencies are available. All commands assume you are in the lbms directory. For automated execution, see the section below.
 
 ## Running as a Service
 

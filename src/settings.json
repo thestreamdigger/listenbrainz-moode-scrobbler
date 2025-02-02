@@ -1,0 +1,29 @@
+{
+    "listenbrainz_token": "your_listenbrainz_token",
+    "currentsong_file": "/var/local/www/currentsong.txt",
+    "min_play_time": 30,
+    "cache_file": "pending_listens.json",
+    "features": {
+        "enable_listening_now": true,
+        "enable_listen": true,
+        "enable_cache": true
+    },
+    "filters": {
+        "ignore_patterns": {
+            "artist": ["Radio station", "Unknown Artist"],
+            "album": [],
+            "title": []
+        },
+        "case_sensitive": false
+    },
+    "retry": {
+        "count": 3,
+        "delay": 2
+    },
+    "logging": {
+        "enable": true,
+        "level": "INFO",
+        "format": "[{level}] {message}",
+        "timestamp": true
+    }
+} 

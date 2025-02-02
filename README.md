@@ -50,11 +50,8 @@ source venv/bin/activate
 ### 4. Install Required Python Packages
 
 ```bash
-# Install project dependencies
-pip install -r requirements.txt
-
 # Install project in development mode
-pip install -e .
+pip3 install -e .
 ```
 
 This "development mode" installation (-e) was used during project testing. It allows you to make code changes and test them immediately without needing reinstallation.
@@ -101,7 +98,7 @@ Example:
     // Content filtering options
     "filters": {
         "ignore_patterns": {
-            "artist": ["Radio station", "Unknown Artist"], // Skip these artists
+            "artist": ["Radio station", "Unknown Artist"],  // Skip these artists
             "album": [],                                    // Skip tracks from these albums
             "title": []                                     // Skip tracks with these titles
         },
@@ -183,13 +180,12 @@ sudo journalctl -u lbms.service -f
 
 ## Notes
 
-- Make sure the user ("pi") has permission to read the `/var/local/www/currentsong.txt` file.
+- Make sure the user has permission to read the `/var/local/www/currentsong.txt` file.
 - The script does not modify anything in moOde; it only reads the currentsong.txt file to send the data to ListenBrainz.
 - Ensure the settings.json file is correctly configured according to your preferences and token information.
 
 ## Acknowledgments
 
-- This project was created as a fun way to learn more about Python programming and integrating with the ListenBrainz API.
 - Thanks to the moOde audio player and ListenBrainz projects for their great software.
 
 ## License

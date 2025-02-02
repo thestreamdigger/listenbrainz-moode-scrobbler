@@ -50,9 +50,6 @@ source venv/bin/activate
 ### 4. Install Required Python Packages
 
 ```bash
-# Install project dependencies
-pip install -r requirements.txt
-
 # Install project in development mode
 pip install -e .
 ```

@@ -90,9 +90,9 @@ Example:
 
     // Feature toggles
     "features": {
-        "enable_listening_now": true,     // Send "now playing" updates
-        "enable_listen": true,            // Enable scrobbling
-        "enable_cache": true              // Save failed scrobbles to retry later
+        "enable_listening_now": true,      // Send "now playing" updates
+        "enable_listen": true,             // Enable scrobbling
+        "enable_cache": true               // Save failed scrobbles to retry later
     },
 
     // Content filtering options

@@ -51,7 +51,7 @@ source venv/bin/activate
 
 ```bash
 # Install project in development mode
-pip install -e .
+pip3 install -e .
 ```
 
 This "development mode" installation (-e) was used during project testing. It allows you to make code changes and test them immediately without needing reinstallation.
@@ -180,7 +180,7 @@ sudo journalctl -u lbms.service -f
 
 ## Notes
 
-- Make sure the user ("pi") has permission to read the `/var/local/www/currentsong.txt` file.
+- Make sure the user has permission to read the `/var/local/www/currentsong.txt` file.
 - The script does not modify anything in moOde; it only reads the currentsong.txt file to send the data to ListenBrainz.
 - Ensure the settings.json file is correctly configured according to your preferences and token information.
 

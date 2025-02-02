@@ -189,7 +189,7 @@ sudo journalctl -u lbms.service -f
 
 ## Acknowledgments
 
-- This project was created as a fun way to learn more about Python programming and integrating with the ListenBrainz API.
+- This project was created as a fun way to learn more about Python programming and the ListenBrainz API.
 - Thanks to the moOde audio player and ListenBrainz projects for their great software.
 
 ## License

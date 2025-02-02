@@ -98,7 +98,7 @@ Example:
     // Content filtering options
     "filters": {
         "ignore_patterns": {
-            "artist": ["Radio station", "Unknown Artist"], // Skip these artists
+            "artist": ["Radio station", "Unknown Artist"],  // Skip these artists
             "album": [],                                    // Skip tracks from these albums
             "title": []                                     // Skip tracks with these titles
         },

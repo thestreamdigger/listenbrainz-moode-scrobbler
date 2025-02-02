@@ -1,13 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-#
-# ListenBrainz moOde Scrobbler v0.1.0
-# Copyright (C) 2025 StreamDigger
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
 
 import time
 import json
@@ -21,6 +13,16 @@ from threading import Thread, Lock
 import sys
 from logger import Logger
 
+def setup_observer(scrobbler):
+    observer = Observer()
+    observer.schedule(
+        scrobbler, 
+        path=os.path.dirname(scrobbler.settings['currentsong_file']), 
+        recursive=False
+    )
+    observer.start()
+    scrobbler.log.info("File monitoring started")
+    return observer
 
 def print_banner():
     banner = """
@@ -34,10 +36,9 @@ def print_banner():
 █   █ ▀▄▄▄▀ ▐▌ ▐▌▗▞▀▜▌▝▚▄▄▖         ▝▀▚▖    █   ▀▄▄▄▀ ▐▛▀▚▖▐▛▀▚▖█ ▝▚▄▄▖█    
             ▝▚▄▞▘▝▚▄▟▌             ▗▄▄▞▘              ▐▙▄▞▘▐▙▄▞▘█           
                                                                             
-Version 0.1.0 (2025) - Streamdigger
+Version 0.2.0 (2025) - Streamdigger
 """
     return banner
-
 
 class ListenCache:
     def __init__(self, cache_file, logger):
@@ -86,7 +87,6 @@ class ListenCache:
                 self.save_cache()
                 break
 
-
 class ListenBrainzScrobbler(FileSystemEventHandler):
     def __init__(self):
         print(print_banner())
@@ -95,12 +95,10 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
         self.log.debug("Settings loaded successfully")
         self.client = None
         self.token = self.settings['listenbrainz_token']
-        
         self.current_song = None
         self.play_start_time = None
         self.retry_count = self.settings['retry']['count']
         self.retry_delay = self.settings['retry']['delay']
-        
         self.listen_cache = None
 
     def initialize(self):
@@ -134,36 +132,24 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
             self.log.info("No track currently playing")
 
     def parse_currentsong(self):
+        song_info = {"title": None, "artist": None, "album": None, "state": None}
         try:
             with open(self.settings['currentsong_file'], 'r', encoding='utf-8') as f:
-                lines = f.readlines()
-
-            song_info = {
-                "title": None,
-                "artist": None,
-                "album": None,
-                "state": None
-            }
-
-            for line in lines:
-                if line.startswith("title="):
-                    song_info["title"] = self.clean_text(line.split("=", 1)[1])
-                elif line.startswith("artist="):
-                    song_info["artist"] = self.clean_text(line.split("=", 1)[1])
-                elif line.startswith("album="):
-                    song_info["album"] = self.clean_text(line.split("=", 1)[1])
-                elif line.startswith("state="):
-                    song_info["state"] = self.clean_text(line.split("=", 1)[1])
-
-            if not song_info["title"] or not song_info["artist"]:
-                self.log.debug("Invalid song info: missing title or artist")
-                return None
-
-            return song_info
-
+                for line in f:
+                    if "=" in line:
+                        key, value = line.split("=", 1)
+                        key = key.strip().lower()
+                        if key in song_info:
+                            song_info[key] = self.clean_text(value)
         except Exception as e:
             self.log.error(f"Error parsing song information: {str(e)}")
             return None
+
+        if not song_info["title"] or not song_info["artist"]:
+            self.log.debug("Invalid song info: missing title or artist")
+            return None
+
+        return song_info
 
     def submit_playing_now(self, song_info):
         if not self.settings['features']['enable_listening_now']:
@@ -185,6 +171,17 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
             self.log.error(f"Failed to submit Listening now...: {e}")
             return False
 
+    def retry_operation(self, func, *args, **kwargs):
+        for attempt in range(self.retry_count):
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                self.log.error(f"Operation failed on attempt {attempt+1}/{self.retry_count}: {str(e)}")
+                if attempt < self.retry_count - 1:
+                    self.log.wait(f"Retrying in {self.retry_delay} seconds...")
+                    time.sleep(self.retry_delay)
+        raise Exception("All retry attempts exhausted.")
+
     def submit_listen(self, song_info):
         if not self.settings['features']['enable_listen']:
             return
@@ -204,32 +201,23 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
             listening_from='moOde audio player'
         )
 
-        for attempt in range(self.retry_count):
-            try:
-                self.client.submit_single_listen(listen)
-                self.log.info(f"Successfully submitted: {song_info['title']} by {song_info['artist']}")
-                return
-            except Exception as e:
-                self.log.error(f"Submission failed for '{song_info['title']}' by '{song_info['artist']}'")
-                self.log.error(f"Attempt {attempt + 1}/{self.retry_count} - Error: {str(e)}")
-                if attempt < self.retry_count - 1:
-                    self.log.wait(f"Retrying in {self.retry_delay} seconds...")
-                    time.sleep(self.retry_delay)
-                else:
-                    self.log.error("All retry attempts exhausted")
-
-        if self.settings['features']['enable_cache']:
-            self.log.wait("Saving failed submission to cache for later retry...")
-            self.listen_cache.add_listen({
-                'track_name': song_info['title'],
-                'artist_name': song_info['artist'],
-                'release_name': song_info.get('album', ''),
-                'listened_at': int(time.time()),
-                'listening_from': 'moOde audio player'
-            })
-            self.log.ok("Submission saved to cache")
-        else:
-            self.log.error("Submission lost - Cache feature is disabled")
+        try:
+            self.retry_operation(self.client.submit_single_listen, listen)
+            self.log.info(f"Successfully submitted: {song_info['title']} by {song_info['artist']}")
+        except Exception as e:
+            self.log.error("All retry attempts exhausted")
+            if self.settings['features']['enable_cache']:
+                self.log.wait("Saving failed submission to cache for later retry...")
+                self.listen_cache.add_listen({
+                    'track_name': song_info['title'],
+                    'artist_name': song_info['artist'],
+                    'release_name': song_info.get('album', ''),
+                    'listened_at': int(time.time()),
+                    'listening_from': 'moOde audio player'
+                })
+                self.log.ok("Submission saved to cache")
+            else:
+                self.log.error("Submission lost - Cache feature is disabled")
 
     def clean_text(self, text):
         if not text:
@@ -247,24 +235,27 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
         self.log.debug(f"Processing state: {song_info.get('state', 'unknown')}")
 
         if song_info.get("state") != "play":
-            if self.current_song:
-                self.log.info(f"Playback stopped: {self.current_song['title']}")
-                self.current_song = None
-                self.play_start_time = None
+            self.handle_stop()
             return
 
         if song_info != self.current_song:
-            self.log.info(f"Track detected: {song_info['title']} by {song_info['artist']}")
-            
-            if self.settings['features']['enable_listening_now']:
-                self.submit_playing_now(song_info)
-            
-            self.current_song = song_info
-            self.play_start_time = time.time()
+            self.handle_new_track(song_info)
 
-            if self.settings['features']['enable_listen']:
-                self.log.debug("Starting scrobble delay")
-                Thread(target=self._delayed_submit, args=(song_info,), daemon=True).start()
+    def handle_stop(self):
+        if self.current_song:
+            self.log.info(f"Playback stopped: {self.current_song['title']}")
+            self.current_song = None
+            self.play_start_time = None
+
+    def handle_new_track(self, song_info):
+        self.log.info(f"Track detected: {song_info['title']} by {song_info['artist']}")
+        if self.settings['features']['enable_listening_now']:
+            self.submit_playing_now(song_info)
+        self.current_song = song_info
+        self.play_start_time = time.time()
+        if self.settings['features']['enable_listen']:
+            self.log.debug("Starting scrobble delay")
+            Thread(target=self._delayed_submit, args=(song_info,), daemon=True).start()
 
     def _delayed_submit(self, song_info):
         self.log.debug(f"Delayed submit started for: {song_info['title']}")
@@ -310,35 +301,23 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
         if self.listen_cache:
             self.listen_cache.save_cache()
 
-
 def main():
-    scrobbler = None
-    observer = None
-    
     try:
         scrobbler = ListenBrainzScrobbler()
-        
+
         if not scrobbler.initialize():
             scrobbler.log.error("Initialization failed. Exiting...")
             return 1
-        
-        observer = Observer()
-        observer.schedule(
-            scrobbler, 
-            path=os.path.dirname(scrobbler.settings['currentsong_file']), 
-            recursive=False
-        )
-        
-        observer.start()
-        scrobbler.log.info("File monitoring started")
-        
+
+        observer = setup_observer(scrobbler)
+
         scrobbler.check_initial_playback()
-        
+
         scrobbler.log.info("Scrobbler is now running. Waiting for updates...")
-        
+
         while True:
             time.sleep(1)
-            
+
     except KeyboardInterrupt:
         scrobbler.log.info("Received shutdown signal...")
     except Exception as e:
@@ -346,15 +325,14 @@ def main():
             scrobbler.log.error(f"Fatal error: {str(e)}")
         return 1
     finally:
-        if observer:
+        if 'observer' in locals():
             observer.stop()
             observer.join()
         if scrobbler:
             scrobbler.log.info("Shutting down...")
             scrobbler.cleanup()
-    
-    return 0
 
+    return 0
 
 if __name__ == "__main__":
     sys.exit(main())

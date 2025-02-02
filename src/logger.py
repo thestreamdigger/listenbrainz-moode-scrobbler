@@ -56,5 +56,4 @@ class Logger:
     def warning(self, message): self._log("WARNING", message)
     def error(self, message): self._log("ERROR", message)
     def print(self, message):
-        """Print a message without any prefix"""
         print(message) 

@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+#
+# ListenBrainz moOde Scrobbler v0.1.0
+# Copyright (C) 2025 StreamDigger
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 
 import time
 import json
@@ -12,33 +19,17 @@ from liblistenbrainz import ListenBrainz, Listen
 from threading import Thread, Lock
 import sys
 from logger import Logger
+from __version__ import __version__, __author__, __copyright__
 
-def setup_observer(scrobbler):
-    observer = Observer()
-    observer.schedule(
-        scrobbler, 
-        path=os.path.dirname(scrobbler.settings['currentsong_file']), 
-        recursive=False
-    )
-    observer.start()
-    scrobbler.log.info("File monitoring started")
-    return observer
 
 def print_banner():
-    banner = """
-▗▖   ▄  ▄▄▄  ■  ▗▞▀▚▖▄▄▄▄  ▗▄▄▖  ▄▄▄ ▗▞▀▜▌▄ ▄▄▄▄  ▄▄▄▄▄                     
-▐▌   ▄ ▀▄▄▗▄▟▙▄▖▐▛▀▀▘█   █ ▐▌ ▐▌█    ▝▚▄▟▌▄ █   █  ▄▄▄▀                     
-▐▌   █ ▄▄▄▀ ▐▌  ▝▚▄▄▖█   █ ▐▛▀▚▖█         █ █   █ █▄▄▄▄                     
-▐▙▄▄▖█      ▐▌             ▐▙▄▞▘          █                                 
-            ▐▌                                                              
-▄▄▄▄   ▄▄▄   ▗▄▖    ▐▌▗▞▀▚▖         ▗▄▄▖▗▞▀▘ ▄▄▄ ▄▄▄  ▗▖   ▗▖   █ ▗▞▀▚▖ ▄▄▄ 
-█ █ █ █   █ ▐▌ ▐▌   ▐▌▐▛▀▀▘        ▐▌   ▝▚▄▖█   █   █ ▐▌   ▐▌   █ ▐▛▀▀▘█    
-█   █ ▀▄▄▄▀ ▐▌ ▐▌▗▞▀▜▌▝▚▄▄▖         ▝▀▚▖    █   ▀▄▄▄▀ ▐▛▀▚▖▐▛▀▚▖█ ▝▚▄▄▖█    
-            ▝▚▄▞▘▝▚▄▟▌             ▗▄▄▞▘              ▐▙▄▞▘▐▙▄▞▘█           
-                                                                            
-Version 0.2.0 (2025) - Streamdigger
+    banner = f"""
+LISTENBRAINZ-MOODE-SCROBBLER
+Version {__version__}
+{__copyright__}
 """
     return banner
+
 
 class ListenCache:
     def __init__(self, cache_file, logger):
@@ -76,16 +67,52 @@ class ListenCache:
         self.save_cache()
 
     def process_pending_listens(self, client):
-        while self.pending_listens:
+        if len(self.pending_listens) < 3:
+            while self.pending_listens:
+                listen_dict = self.pending_listens.popleft()
+                try:
+                    listen = Listen(**listen_dict)
+                    client.submit_single_listen(listen)
+                    self.save_cache()
+                except Exception:
+                    self.pending_listens.appendleft(listen_dict)
+                    self.save_cache()
+                    return False
+            return True
+        
+        batch_size = min(10, len(self.pending_listens))
+        batch = []
+        
+        for _ in range(batch_size):
+            if not self.pending_listens:
+                break
             listen_dict = self.pending_listens.popleft()
             try:
                 listen = Listen(**listen_dict)
-                client.submit_single_listen(listen)
-                self.save_cache()
-            except Exception:
+                batch.append(listen)
+            except Exception as e:
+                self.log.error(f"Error creating Listen object: {e}")
                 self.pending_listens.appendleft(listen_dict)
+        
+        if batch:
+            try:
+                client.submit_listens(batch)
                 self.save_cache()
-                break
+                return True
+            except Exception:
+                for listen in batch:
+                    self.pending_listens.appendleft({
+                        'track_name': listen.track_name,
+                        'artist_name': listen.artist_name,
+                        'release_name': listen.release_name,
+                        'listened_at': listen.listened_at,
+                        'listening_from': listen.listening_from
+                    })
+                self.save_cache()
+                return False
+        
+        return True
+
 
 class ListenBrainzScrobbler(FileSystemEventHandler):
     def __init__(self):
@@ -95,10 +122,12 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
         self.log.debug("Settings loaded successfully")
         self.client = None
         self.token = self.settings['listenbrainz_token']
+        
         self.current_song = None
         self.play_start_time = None
         self.retry_count = self.settings['retry']['count']
         self.retry_delay = self.settings['retry']['delay']
+        
         self.listen_cache = None
 
     def initialize(self):
@@ -118,8 +147,38 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
                 os.path.join(cache_dir, self.settings['cache_file']),
                 self.log
             )
+            Thread(target=self._check_connection_periodically, daemon=True).start()
 
         return True
+
+    def _check_connection_periodically(self):
+        while True:
+            time.sleep(60)
+            self.check_connection_and_process_cache()
+            
+    def check_connection_and_process_cache(self):
+        if not self.settings['features']['enable_cache'] or not self.listen_cache:
+            return
+            
+        if not self.listen_cache.pending_listens:
+            return
+            
+        try:
+            self.client.validate_listen_payload({})
+            
+            pending_count = len(self.listen_cache.pending_listens)
+            if pending_count > 0:
+                self.log.info(f"Connection restored. Processing {pending_count} pending listens...")
+                
+                success = self.listen_cache.process_pending_listens(self.client)
+                
+                if success:
+                    self.log.ok(f"Cache processed successfully after reconnection")
+                else:
+                    self.log.warning("Partial cache processing after reconnection")
+                    
+        except Exception:
+            pass
 
     def check_initial_playback(self):
         self.log.info("Checking for currently playing track...")
@@ -132,26 +191,39 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
             self.log.info("No track currently playing")
 
     def parse_currentsong(self):
-        song_info = {"title": None, "artist": None, "album": None, "state": None}
         try:
             with open(self.settings['currentsong_file'], 'r', encoding='utf-8') as f:
-                for line in f:
-                    if "=" in line:
-                        key, value = line.split("=", 1)
-                        key = key.strip().lower()
-                        if key in song_info:
-                            song_info[key] = self.clean_text(value)
+                lines = f.readlines()
+
+            song_info = {
+                "title": None,
+                "artist": None,
+                "album": None,
+                "state": None
+            }
+
+            for line in lines:
+                if line.startswith("title="):
+                    song_info["title"] = self.clean_text(line.split("=", 1)[1])
+                elif line.startswith("artist="):
+                    song_info["artist"] = self.clean_text(line.split("=", 1)[1])
+                elif line.startswith("album="):
+                    song_info["album"] = self.clean_text(line.split("=", 1)[1])
+                elif line.startswith("state="):
+                    song_info["state"] = self.clean_text(line.split("=", 1)[1])
+
+            if not song_info["title"] or not song_info["artist"]:
+                self.log.debug("Invalid song info: missing title or artist")
+                return None
+
+            return song_info
+
         except Exception as e:
             self.log.error(f"Error parsing song information: {str(e)}")
             return None
 
-        if not song_info["title"] or not song_info["artist"]:
-            self.log.debug("Invalid song info: missing title or artist")
-            return None
-
-        return song_info
-
     def submit_playing_now(self, song_info):
+        """Print a message without any prefix"""
         if not self.settings['features']['enable_listening_now']:
             self.log.debug("Listening now... feature disabled")
             return True
@@ -171,17 +243,6 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
             self.log.error(f"Failed to submit Listening now...: {e}")
             return False
 
-    def retry_operation(self, func, *args, **kwargs):
-        for attempt in range(self.retry_count):
-            try:
-                return func(*args, **kwargs)
-            except Exception as e:
-                self.log.error(f"Operation failed on attempt {attempt+1}/{self.retry_count}: {str(e)}")
-                if attempt < self.retry_count - 1:
-                    self.log.wait(f"Retrying in {self.retry_delay} seconds...")
-                    time.sleep(self.retry_delay)
-        raise Exception("All retry attempts exhausted.")
-
     def submit_listen(self, song_info):
         if not self.settings['features']['enable_listen']:
             return
@@ -190,7 +251,7 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
         play_time = current_time - self.play_start_time if self.play_start_time else 0
 
         if play_time < self.settings['min_play_time']:
-            self.log.info(f"Skipping submission: {song_info['title']} - Insufficient play time")
+            self.log.debug(f"Skipping submission: {song_info['title']} - Insufficient play time")
             return
 
         listen = Listen(
@@ -201,23 +262,32 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
             listening_from='moOde audio player'
         )
 
-        try:
-            self.retry_operation(self.client.submit_single_listen, listen)
-            self.log.info(f"Successfully submitted: {song_info['title']} by {song_info['artist']}")
-        except Exception as e:
-            self.log.error("All retry attempts exhausted")
-            if self.settings['features']['enable_cache']:
-                self.log.wait("Saving failed submission to cache for later retry...")
-                self.listen_cache.add_listen({
-                    'track_name': song_info['title'],
-                    'artist_name': song_info['artist'],
-                    'release_name': song_info.get('album', ''),
-                    'listened_at': int(time.time()),
-                    'listening_from': 'moOde audio player'
-                })
-                self.log.ok("Submission saved to cache")
-            else:
-                self.log.error("Submission lost - Cache feature is disabled")
+        for attempt in range(self.retry_count):
+            try:
+                self.client.submit_single_listen(listen)
+                self.log.info(f"Successfully submitted: {song_info['title']} by {song_info['artist']}")
+                return
+            except Exception as e:
+                self.log.error(f"Submission failed for '{song_info['title']}' by '{song_info['artist']}'")
+                self.log.error(f"Attempt {attempt + 1}/{self.retry_count} - Error: {str(e)}")
+                if attempt < self.retry_count - 1:
+                    self.log.wait(f"Retrying in {self.retry_delay} seconds...")
+                    time.sleep(self.retry_delay)
+                else:
+                    self.log.error("All retry attempts exhausted")
+
+        if self.settings['features']['enable_cache']:
+            self.log.wait("Saving failed submission to cache for later retry...")
+            self.listen_cache.add_listen({
+                'track_name': song_info['title'],
+                'artist_name': song_info['artist'],
+                'release_name': song_info.get('album', ''),
+                'listened_at': int(time.time()),
+                'listening_from': 'moOde audio player'
+            })
+            self.log.ok("Submission saved to cache")
+        else:
+            self.log.error("Submission lost - Cache feature is disabled")
 
     def clean_text(self, text):
         if not text:
@@ -235,27 +305,24 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
         self.log.debug(f"Processing state: {song_info.get('state', 'unknown')}")
 
         if song_info.get("state") != "play":
-            self.handle_stop()
+            if self.current_song:
+                self.log.info(f"Playback stopped: {self.current_song['title']}")
+                self.current_song = None
+                self.play_start_time = None
             return
 
         if song_info != self.current_song:
-            self.handle_new_track(song_info)
+            if self.settings['features']['enable_listening_now']:
+                self.submit_playing_now(song_info)
+            else:
+                self.log.info(f"Track detected: {song_info['title']} by {song_info['artist']}")
+            
+            self.current_song = song_info
+            self.play_start_time = time.time()
 
-    def handle_stop(self):
-        if self.current_song:
-            self.log.info(f"Playback stopped: {self.current_song['title']}")
-            self.current_song = None
-            self.play_start_time = None
-
-    def handle_new_track(self, song_info):
-        self.log.info(f"Track detected: {song_info['title']} by {song_info['artist']}")
-        if self.settings['features']['enable_listening_now']:
-            self.submit_playing_now(song_info)
-        self.current_song = song_info
-        self.play_start_time = time.time()
-        if self.settings['features']['enable_listen']:
-            self.log.debug("Starting scrobble delay")
-            Thread(target=self._delayed_submit, args=(song_info,), daemon=True).start()
+            if self.settings['features']['enable_listen']:
+                self.log.debug("Starting scrobble delay")
+                Thread(target=self._delayed_submit, args=(song_info,), daemon=True).start()
 
     def _delayed_submit(self, song_info):
         self.log.debug(f"Delayed submit started for: {song_info['title']}")
@@ -301,23 +368,35 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
         if self.listen_cache:
             self.listen_cache.save_cache()
 
+
 def main():
+    scrobbler = None
+    observer = None
+    
     try:
         scrobbler = ListenBrainzScrobbler()
-
+        
         if not scrobbler.initialize():
             scrobbler.log.error("Initialization failed. Exiting...")
             return 1
-
-        observer = setup_observer(scrobbler)
-
+        
+        observer = Observer()
+        observer.schedule(
+            scrobbler, 
+            path=os.path.dirname(scrobbler.settings['currentsong_file']), 
+            recursive=False
+        )
+        
+        observer.start()
+        scrobbler.log.info("File monitoring started")
+        
         scrobbler.check_initial_playback()
-
+        
         scrobbler.log.info("Scrobbler is now running. Waiting for updates...")
-
+        
         while True:
             time.sleep(1)
-
+            
     except KeyboardInterrupt:
         scrobbler.log.info("Received shutdown signal...")
     except Exception as e:
@@ -325,14 +404,15 @@ def main():
             scrobbler.log.error(f"Fatal error: {str(e)}")
         return 1
     finally:
-        if 'observer' in locals():
+        if observer:
             observer.stop()
             observer.join()
         if scrobbler:
             scrobbler.log.info("Shutting down...")
             scrobbler.cleanup()
-
+    
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())

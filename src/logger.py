@@ -56,4 +56,4 @@ class Logger:
     def warning(self, message): self._log("WARNING", message)
     def error(self, message): self._log("ERROR", message)
     def print(self, message):
-        print(message) 
+        print(message)

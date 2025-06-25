@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.0.3] - 2025-01-03
+### Fixed
+- Fixed infinite loop bug when invalid listen objects are cached
+- Improved error handling to prevent cache corruption
+
+### Added
+- Signal handlers for graceful shutdown on SIGTERM/SIGINT
+- Token masking in error logs to prevent credential leakage
+- Optimized cache I/O with delayed writes to reduce disk operations
+
+### Changed
+- Preprocessed filter patterns for better performance
+- Enhanced cache management with thread-safe operations
+
 ## [1.0.2] - 2025-03-01
 ### Added
 - Smart hybrid cache processing system for efficient offline recovery

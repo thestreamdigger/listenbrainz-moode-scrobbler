@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# ListenBrainz moOde Scrobbler v0.1.0
+# ListenBrainz moOde Scrobbler v1.0.3
 # Copyright (C) 2025 StreamDigger
 #
 # This program is free software: you can redistribute it and/or modify
@@ -11,12 +11,13 @@
 import time
 import json
 import os
+import signal
 from collections import deque
 from html import unescape
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from liblistenbrainz import ListenBrainz, Listen
-from threading import Thread, Lock
+from threading import Thread, Lock, Timer
 import sys
 from logger import Logger
 from __version__ import __version__, __author__, __copyright__
@@ -36,6 +37,8 @@ class ListenCache:
         self.cache_file = cache_file
         self.pending_listens = deque(maxlen=1000)
         self.log = logger
+        self._save_timer = None
+        self._lock = Lock()
         self.load_cache()
 
     def load_cache(self):
@@ -56,15 +59,28 @@ class ListenCache:
 
     def save_cache(self):
         try:
-            os.makedirs(os.path.dirname(self.cache_file), exist_ok=True)
-            with open(self.cache_file, 'w') as f:
-                json.dump(list(self.pending_listens), f)
+            with self._lock:
+                if self._save_timer:
+                    self._save_timer.cancel()
+                    self._save_timer = None
+                
+                os.makedirs(os.path.dirname(self.cache_file), exist_ok=True)
+                with open(self.cache_file, 'w') as f:
+                    json.dump(list(self.pending_listens), f)
         except Exception as e:
             self.log.error(f"Failed to save cache: {e}")
 
+    def _schedule_save(self):
+        with self._lock:
+            if self._save_timer:
+                self._save_timer.cancel()
+            
+            self._save_timer = Timer(5.0, self.save_cache)
+            self._save_timer.start()
+
     def add_listen(self, listen_dict):
         self.pending_listens.append(listen_dict)
-        self.save_cache()
+        self._schedule_save()
 
     def process_pending_listens(self, client):
         if len(self.pending_listens) < 3:
@@ -73,10 +89,10 @@ class ListenCache:
                 try:
                     listen = Listen(**listen_dict)
                     client.submit_single_listen(listen)
-                    self.save_cache()
+                    self._schedule_save()
                 except Exception:
                     self.pending_listens.appendleft(listen_dict)
-                    self.save_cache()
+                    self._schedule_save()
                     return False
             return True
         
@@ -91,13 +107,12 @@ class ListenCache:
                 listen = Listen(**listen_dict)
                 batch.append(listen)
             except Exception as e:
-                self.log.error(f"Error creating Listen object: {e}")
-                self.pending_listens.appendleft(listen_dict)
+                self.log.error(f"Dropping invalid listen: {e}")
         
         if batch:
             try:
                 client.submit_listens(batch)
-                self.save_cache()
+                self._schedule_save()
                 return True
             except Exception:
                 for listen in batch:
@@ -108,7 +123,7 @@ class ListenCache:
                         'listened_at': listen.listened_at,
                         'listening_from': listen.listening_from
                     })
-                self.save_cache()
+                self._schedule_save()
                 return False
         
         return True
@@ -129,6 +144,22 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
         self.retry_delay = self.settings['retry']['delay']
         
         self.listen_cache = None
+        self._preprocess_filters()
+
+    def _preprocess_filters(self):
+        filters = self.settings.get('filters', {})
+        self._case_sensitive = filters.get('case_sensitive', False)
+        
+        self._ignore_patterns = {}
+        for field, patterns in filters.get('ignore_patterns', {}).items():
+            if self._case_sensitive:
+                self._ignore_patterns[field] = patterns
+            else:
+                self._ignore_patterns[field] = [p.lower() for p in patterns]
+
+    def _safe_log_error(self, message):
+        safe_msg = message.replace(self.token, "****")
+        self.log.error(safe_msg)
 
     def initialize(self):
         self.log.wait("Validating ListenBrainz token...")
@@ -137,7 +168,7 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
             self.client.set_auth_token(self.token)
             self.log.ok("Token validated successfully")
         except Exception as e:
-            self.log.error(f"Token validation failed - {e}")
+            self._safe_log_error(f"Token validation failed - {e}")
             return False
 
         if self.settings['features']['enable_cache']:
@@ -223,7 +254,6 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
             return None
 
     def submit_playing_now(self, song_info):
-        """Print a message without any prefix"""
         if not self.settings['features']['enable_listening_now']:
             self.log.debug("Listening now... feature disabled")
             return True
@@ -240,7 +270,7 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
             self.log.info(f"Listening now... {song_info['title']} by {song_info['artist']}")
             return True
         except Exception as e:
-            self.log.error(f"Failed to submit Listening now...: {e}")
+            self._safe_log_error(f"Failed to submit Listening now...: {e}")
             return False
 
     def submit_listen(self, song_info):
@@ -269,7 +299,7 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
                 return
             except Exception as e:
                 self.log.error(f"Submission failed for '{song_info['title']}' by '{song_info['artist']}'")
-                self.log.error(f"Attempt {attempt + 1}/{self.retry_count} - Error: {str(e)}")
+                self._safe_log_error(f"Attempt {attempt + 1}/{self.retry_count} - Error: {str(e)}")
                 if attempt < self.retry_count - 1:
                     self.log.wait(f"Retrying in {self.retry_delay} seconds...")
                     time.sleep(self.retry_delay)
@@ -343,21 +373,16 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
             exit(1)
 
     def should_ignore(self, song_info):
-        filters = self.settings.get('filters', {})
-        ignore_patterns = filters.get('ignore_patterns', {})
-        case_sensitive = filters.get('case_sensitive', False)
-
         def match_patterns(text, patterns):
             if not text or not patterns:
                 return False
             
-            if not case_sensitive:
+            if not self._case_sensitive:
                 text = text.lower()
-                patterns = [p.lower() for p in patterns]
                 
             return any(pattern in text for pattern in patterns)
 
-        for field, patterns in ignore_patterns.items():
+        for field, patterns in self._ignore_patterns.items():
             if match_patterns(song_info.get(field, ''), patterns):
                 self.log.debug(f"Ignoring content: {song_info.get('title')} (matched {field} pattern)")
                 return True
@@ -369,9 +394,20 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
             self.listen_cache.save_cache()
 
 
+def signal_handler(signum, frame):
+    if 'scrobbler' in globals() and scrobbler:
+        scrobbler.log.info(f"Received signal {signum}, shutting down gracefully...")
+        scrobbler.cleanup()
+    sys.exit(0)
+
+
 def main():
+    global scrobbler
     scrobbler = None
     observer = None
+    
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
     
     try:
         scrobbler = ListenBrainzScrobbler()

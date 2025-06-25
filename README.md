@@ -1,5 +1,5 @@
 # ListenBrainz moOde Scrobbler
-[![Version](https://img.shields.io/badge/version-1.0.2-blue.svg)](https://github.com/thestreamdigger/listenbrainz-moode-scrobbler)
+[![Version](https://img.shields.io/badge/version-1.0.3-blue.svg)](https://github.com/thestreamdigger/listenbrainz-moode-scrobbler)
 [![License](https://img.shields.io/badge/license-GPL%20v3-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/)
 [![Status](https://img.shields.io/badge/status-stable-brightgreen.svg)]()
@@ -21,6 +21,7 @@ This script was developed as a hobby project and a learning exercise in Python p
 - Reads track metadata (title, artist, album) from moOde.
 - Optional filtering to ignore certain patterns (good for radio streams).
 - Simple JSON configuration file.
+
 
 ## Requirements
 

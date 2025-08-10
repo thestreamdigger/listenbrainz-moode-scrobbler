@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.0.4] - 2025-08-10
+### Added
+- Automated installer now enables and restarts the systemd service by default
+
+### Changed
+- Atomic cache writes (temporary file + os.replace) to reduce corruption risk
+- Cache access is now thread-safe using a lock around append/popleft/appendleft
+- Preserved order when re-enqueuing a failed batch
+- Normalized playback state to lowercase for consistent "play" checks
+- Watchdog compares paths via os.path.realpath and handles on_created events
+- Sanitized min_play_time (coerced to integer and clamped to >= 0)
+- Adjusted reconnection logs to avoid implying active connectivity checks
+
 ## [1.0.3] - 2025-01-03
 ### Fixed
 - Fixed infinite loop bug when invalid listen objects are cached
@@ -29,8 +42,6 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [1.0.1] - 2025-02-23
 ### Changed
-- Improved log messages clarity by removing redundant "Track detected" notifications
-- Unified logging format for "Listening now..." messages
 - Code cleanup and optimization in main.py
 
 ## [1.0.0] - 2025-10-20

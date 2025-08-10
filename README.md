@@ -1,5 +1,5 @@
 # ListenBrainz moOde Scrobbler
-[![Version](https://img.shields.io/badge/version-1.0.3-blue.svg)](https://github.com/thestreamdigger/listenbrainz-moode-scrobbler)
+[![Version](https://img.shields.io/badge/version-1.0.4-blue.svg)](https://github.com/thestreamdigger/listenbrainz-moode-scrobbler)
 [![License](https://img.shields.io/badge/license-GPL%20v3-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/)
 [![Status](https://img.shields.io/badge/status-stable-brightgreen.svg)]()
@@ -66,14 +66,7 @@ Enable moOde to generate the `currentsong.txt` file:
 
 ### 5. Configure the Script
 
-1. Create your settings file:
-```bash
-cp src/settings.example.json src/settings.json
-```
-
-2. Edit `src/settings.json` with your ListenBrainz token and preferences
-
-Example:
+Create and edit `src/settings.json` with your ListenBrainz token and preferences. Example:
 
 ```json
 {
@@ -152,7 +145,7 @@ sudo cp lbms.service.example /etc/systemd/system/lbms.service
 sudo nano /etc/systemd/system/lbms.service
 ```
 
-3. Configure and start the service:
+3. Configure and start the service (the installer already enables and restarts the service by default):
 ```bash
 # Reload systemd configurations
 sudo systemctl daemon-reload
@@ -160,8 +153,8 @@ sudo systemctl daemon-reload
 # Enable service to start automatically at boot
 sudo systemctl enable lbms.service
 
-# Start the service immediately
-sudo systemctl start lbms.service
+# Start/restart the service immediately
+sudo systemctl restart lbms.service
 ```
 
 To disable automatic startup and stop the service:

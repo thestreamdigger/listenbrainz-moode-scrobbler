@@ -12,6 +12,7 @@ import time
 import json
 import os
 import signal
+import tempfile
 from collections import deque
 from html import unescape
 from watchdog.observers import Observer
@@ -63,10 +64,22 @@ class ListenCache:
                 if self._save_timer:
                     self._save_timer.cancel()
                     self._save_timer = None
-                
-                os.makedirs(os.path.dirname(self.cache_file), exist_ok=True)
-                with open(self.cache_file, 'w') as f:
-                    json.dump(list(self.pending_listens), f)
+
+                cache_dir = os.path.dirname(self.cache_file)
+                if cache_dir:
+                    os.makedirs(cache_dir, exist_ok=True)
+
+                temp_fd, temp_path = tempfile.mkstemp(prefix=".lbms_cache_", dir=cache_dir if cache_dir else None)
+                try:
+                    with os.fdopen(temp_fd, 'w') as tmp_f:
+                        json.dump(list(self.pending_listens), tmp_f)
+                    os.replace(temp_path, self.cache_file)
+                finally:
+                    if os.path.exists(temp_path):
+                        try:
+                            os.remove(temp_path)
+                        except Exception:
+                            pass
         except Exception as e:
             self.log.error(f"Failed to save cache: {e}")
 
@@ -79,53 +92,64 @@ class ListenCache:
             self._save_timer.start()
 
     def add_listen(self, listen_dict):
-        self.pending_listens.append(listen_dict)
+        with self._lock:
+            self.pending_listens.append(listen_dict)
         self._schedule_save()
 
     def process_pending_listens(self, client):
-        if len(self.pending_listens) < 3:
-            while self.pending_listens:
-                listen_dict = self.pending_listens.popleft()
+        with self._lock:
+            small_queue = len(self.pending_listens) < 3
+        if small_queue:
+            to_process = []
+            with self._lock:
+                while self.pending_listens:
+                    to_process.append(self.pending_listens.popleft())
+
+            for listen_dict in to_process:
                 try:
                     listen = Listen(**listen_dict)
                     client.submit_single_listen(listen)
                     self._schedule_save()
                 except Exception:
-                    self.pending_listens.appendleft(listen_dict)
+                    with self._lock:
+                        self.pending_listens.appendleft(listen_dict)
                     self._schedule_save()
                     return False
             return True
-        
-        batch_size = min(10, len(self.pending_listens))
+
+        with self._lock:
+            batch_size = min(10, len(self.pending_listens))
+            extracted = []
+            for _ in range(batch_size):
+                if not self.pending_listens:
+                    break
+                extracted.append(self.pending_listens.popleft())
+
         batch = []
-        
-        for _ in range(batch_size):
-            if not self.pending_listens:
-                break
-            listen_dict = self.pending_listens.popleft()
+        for listen_dict in extracted:
             try:
-                listen = Listen(**listen_dict)
-                batch.append(listen)
+                batch.append(Listen(**listen_dict))
             except Exception as e:
                 self.log.error(f"Dropping invalid listen: {e}")
-        
+
         if batch:
             try:
                 client.submit_listens(batch)
                 self._schedule_save()
                 return True
             except Exception:
-                for listen in batch:
-                    self.pending_listens.appendleft({
-                        'track_name': listen.track_name,
-                        'artist_name': listen.artist_name,
-                        'release_name': listen.release_name,
-                        'listened_at': listen.listened_at,
-                        'listening_from': listen.listening_from
-                    })
+                with self._lock:
+                    for listen in reversed(batch):
+                        self.pending_listens.appendleft({
+                            'track_name': listen.track_name,
+                            'artist_name': listen.artist_name,
+                            'release_name': listen.release_name,
+                            'listened_at': listen.listened_at,
+                            'listening_from': listen.listening_from
+                        })
                 self._schedule_save()
                 return False
-        
+
         return True
 
 
@@ -142,6 +166,12 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
         self.play_start_time = None
         self.retry_count = self.settings['retry']['count']
         self.retry_delay = self.settings['retry']['delay']
+
+        try:
+            self.min_play_time = max(0, int(self.settings.get('min_play_time', 30)))
+        except Exception:
+            self.min_play_time = 30
+        self._currentsong_realpath = os.path.realpath(self.settings['currentsong_file'])
         
         self.listen_cache = None
         self._preprocess_filters()
@@ -199,14 +229,14 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
             
             pending_count = len(self.listen_cache.pending_listens)
             if pending_count > 0:
-                self.log.info(f"Connection restored. Processing {pending_count} pending listens...")
+                self.log.info(f"Processing {pending_count} pending listens...")
                 
                 success = self.listen_cache.process_pending_listens(self.client)
                 
                 if success:
-                    self.log.ok(f"Cache processed successfully after reconnection")
+                    self.log.ok(f"Cache processed successfully")
                 else:
-                    self.log.warning("Partial cache processing after reconnection")
+                    self.log.warning("Partial cache processing")
                     
         except Exception:
             pass
@@ -241,7 +271,8 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
                 elif line.startswith("album="):
                     song_info["album"] = self.clean_text(line.split("=", 1)[1])
                 elif line.startswith("state="):
-                    song_info["state"] = self.clean_text(line.split("=", 1)[1])
+                    state_value = self.clean_text(line.split("=", 1)[1])
+                    song_info["state"] = state_value.lower() if state_value else None
 
             if not song_info["title"] or not song_info["artist"]:
                 self.log.debug("Invalid song info: missing title or artist")
@@ -280,7 +311,7 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
         current_time = time.time()
         play_time = current_time - self.play_start_time if self.play_start_time else 0
 
-        if play_time < self.settings['min_play_time']:
+        if play_time < self.min_play_time:
             self.log.debug(f"Skipping submission: {song_info['title']} - Insufficient play time")
             return
 
@@ -356,13 +387,24 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
 
     def _delayed_submit(self, song_info):
         self.log.debug(f"Delayed submit started for: {song_info['title']}")
-        time.sleep(self.settings['min_play_time'])
+        time.sleep(self.min_play_time)
         self.submit_listen(song_info)
 
     def on_modified(self, event):
-        if event.src_path == self.settings['currentsong_file']:
-            self.log.debug("Currentsong file changed, handling update")
-            self.handle_song_update(self.parse_currentsong())
+        try:
+            if os.path.realpath(event.src_path) == self._currentsong_realpath:
+                self.log.debug("Currentsong file changed, handling update")
+                self.handle_song_update(self.parse_currentsong())
+        except Exception:
+            pass
+
+    def on_created(self, event):
+        try:
+            if os.path.realpath(event.src_path) == self._currentsong_realpath:
+                self.log.debug("Currentsong file created, handling update")
+                self.handle_song_update(self.parse_currentsong())
+        except Exception:
+            pass
 
     def load_settings(self):
         try:

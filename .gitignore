@@ -36,7 +36,7 @@ ENV/
 *.swo
 
 # Local configuration files
-src/settings.json
+.env
 
 # Cache directories
-~/.cache/listenbrainz-moode-scrobbler/
+src/cache/

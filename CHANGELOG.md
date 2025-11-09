@@ -3,18 +3,28 @@
 All notable changes to this project will be documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [1.0.4] - 2025-08-10
-### Added
-- Automated installer now enables and restarts the systemd service by default
-
+## [1.0.5] - 2025-11-01
 ### Changed
-- Atomic cache writes (temporary file + os.replace) to reduce corruption risk
-- Cache access is now thread-safe using a lock around append/popleft/appendleft
-- Preserved order when re-enqueuing a failed batch
-- Normalized playback state to lowercase for consistent "play" checks
-- Watchdog compares paths via os.path.realpath and handles on_created events
-- Sanitized min_play_time (coerced to integer and clamped to >= 0)
-- Adjusted reconnection logs to avoid implying active connectivity checks
+- Token now stored in .env file instead of settings.json
+- Installation script prompts for token during setup
+- Improved documentation with clearer installation instructions
+- README and CHANGELOG moved to project root for better visibility
+
+### Added
+- Named constants for configuration values
+- Documentation for classes and methods
+- Detailed documentation about systemd service installation and configuration
+- Complete manual installation guide with systemd service setup instructions
+
+### Security
+- Credentials protected from version control
+- Automatic .env file creation with secure permissions
+
+## [1.0.4] - 2025-10-05
+### Changed
+- Simplified cache directory structure (src/cache/ instead of nested subdirectory)
+- Added debug logging to silent exception handlers for better troubleshooting
+- Removed obsolete pending_listens.json from repository
 
 ## [1.0.3] - 2025-01-03
 ### Fixed
@@ -23,7 +33,6 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 - Signal handlers for graceful shutdown on SIGTERM/SIGINT
-- Token masking in error logs to prevent credential leakage
 - Optimized cache I/O with delayed writes to reduce disk operations
 
 ### Changed

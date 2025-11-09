@@ -1,223 +1,340 @@
 #!/bin/bash
 
 # =============================================================================
-# ListenBrainz moOde Scrobbler - Installer
-# Inspired by ADAM3-GPIO install scripts (quiet/non-interactive, checks, service)
+# ListenBrainz moOde Scrobbler - Installation Script
+# Automated setup with token configuration
 # =============================================================================
 
 set -e
 
-# ------------------------------
-# CONFIG
-# ------------------------------
+# Configuration
 PROJECT_NAME="LBMS"
 PROJECT_DESC="ListenBrainz moOde Scrobbler"
 VENV_DIR="venv"
 REQUIREMENTS_FILE="requirements.txt"
 PYTHON_CMD="python3"
 BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-ESSENTIAL_DEPS=("$PYTHON_CMD" "pip3")
-SYSTEM_PKGS=("python3-venv")
-QUIET_MODE=false
-NON_INTERACTIVE=false
+DEFAULT_USER="pi"
 
+# Service configuration
 SERVICE_EXAMPLE="$BASE_DIR/examples/lbms.service.example"
 SERVICE_FILE="/etc/systemd/system/lbms.service"
+SERVICE_NAME="lbms"
 
-# ------------------------------
-# ARG PARSE
-# ------------------------------
+# Configuration files
+ENV_FILE="$BASE_DIR/.env"
+SETTINGS_FILE="$BASE_DIR/src/settings.json"
+
+# Options
+QUIET_MODE=false
+SKIP_SERVICE=false
+SKIP_TOKEN=false
+
+# Parse arguments
 while [[ $# -gt 0 ]]; do
   case $1 in
     -q|--quiet)
       QUIET_MODE=true
       shift
       ;;
-    -y|--yes|--non-interactive)
-      NON_INTERACTIVE=true
+    --skip-service)
+      SKIP_SERVICE=true
+      shift
+      ;;
+    --skip-token)
+      SKIP_TOKEN=true
       shift
       ;;
     -h|--help)
       echo "Usage: $0 [OPTIONS]"
-      echo ""
       echo "Options:"
-      echo "  -q, --quiet             Quiet mode, minimal output"
-      echo "  -y, --yes               Non-interactive mode, assume yes to all"
-      echo "  -h, --help              Show this help message"
+      echo "  -q, --quiet        Quiet mode (no interactive prompts)"
+      echo "  --skip-service     Skip systemd service setup"
+      echo "  --skip-token       Skip token configuration"
+      echo "  -h, --help         Show this help message"
       exit 0
       ;;
     *)
-      shift
+      echo "Unknown option: $1"
+      exit 1
       ;;
   esac
 done
 
-# ------------------------------
-# LOG HELPERS
-# ------------------------------
+# Logging functions
 log_info() { if [ "$QUIET_MODE" != "true" ]; then echo "[INFO] $1"; fi; }
-log_warn() { if [ "$QUIET_MODE" != "true" ]; then echo "[WARN] $1"; fi; }
 log_error(){ echo "[ERROR] $1"; exit 1; }
 log_ok()   { if [ "$QUIET_MODE" != "true" ]; then echo "[OK] $1"; fi; }
 
-prompt_yes_no() {
-  if [ "$NON_INTERACTIVE" = "true" ]; then
-    return 0
+# Utility functions
+check_root() {
+  if [ "$EUID" -ne 0 ]; then 
+    echo "Error: Please run as root (sudo)"
+    echo "Usage: sudo $0 [OPTIONS]"
+    exit 1
   fi
-  read -p "$1 (y/n): " -n 1 -r; echo
-  [[ $REPLY =~ ^[Yy]$ ]] && return 0 || return 1
 }
 
 execute_cmd() {
   local desc=$1; shift
   local cmd="$@"
   if [ "$QUIET_MODE" = "true" ]; then
-    if eval "$cmd" &> /dev/null; then return 0; else log_error "Failed to $desc. Command: $cmd"; fi
+    if eval "$cmd" &> /dev/null; then return 0; else log_error "Failed to $desc"; fi
   else
     log_info "Executing: $desc"
-    if eval "$cmd"; then return 0; else log_error "Failed to $desc. Command: $cmd"; fi
+    if eval "$cmd"; then return 0; else log_error "Failed to $desc"; fi
   fi
 }
 
-check_command() {
-  if ! command -v "$1" &> /dev/null; then
-    log_warn "$1 not found."
-    [[ " ${ESSENTIAL_DEPS[*]} " =~ " $1 " ]] && log_error "Essential dependency missing: $1"
-    return 1
+# Check system requirements
+check_system() {
+  log_info "Checking system requirements..."
+  
+  # Check Python
+  if ! command -v python3 &> /dev/null; then
+    log_error "python3 not found. Please install Python 3."
+  fi
+  
+  # Check pip
+  if ! command -v pip3 &> /dev/null; then
+    log_error "pip3 not found. Please install pip."
+  fi
+
+  # Check moOde configuration
+  if [ -f "$BASE_DIR/src/settings.json" ]; then
+    CURR_FILE=$(jq -r '.currentsong_file // empty' "$BASE_DIR/src/settings.json" 2>/dev/null || echo "")
+    if [ -n "$CURR_FILE" ] && [ ! -f "$CURR_FILE" ]; then
+      log_info "Warning: Configured currentsong_file ($CURR_FILE) does not exist. Check moOde configuration."
+    fi
+  fi
+
+  log_ok "System requirements OK"
+}
+
+# Setup Python environment
+setup_python_env() {
+  log_info "Setting up Python virtual environment..."
+  
+  if [ -d "$BASE_DIR/$VENV_DIR" ]; then
+    log_info "Virtual environment already exists."
+    rm -rf "$BASE_DIR/$VENV_DIR"
+  fi
+  
+  execute_cmd "create virtual environment" "$PYTHON_CMD -m venv $VENV_DIR"
+  
+  # Install requirements
+  if [ -f "$BASE_DIR/$REQUIREMENTS_FILE" ]; then
+    log_info "Installing dependencies..."
+    execute_cmd "install requirements" "$BASE_DIR/$VENV_DIR/bin/pip install -r $REQUIREMENTS_FILE"
   else
-    log_ok "$1 found."
+    log_info "No requirements.txt found, skipping dependencies"
+  fi
+  
+  log_ok "Python environment ready"
+}
+
+# Configure token and settings
+setup_configuration() {
+  log_info "Setting up configuration files..."
+
+  TARGET_USER=${SUDO_USER:-$DEFAULT_USER}
+  if [ "$TARGET_USER" = "root" ]; then TARGET_USER=$DEFAULT_USER; fi
+
+  # settings.json is now committed to repository (without token)
+  # Just ensure correct permissions
+  if [ -f "$SETTINGS_FILE" ]; then
+    chown "$TARGET_USER:$TARGET_USER" "$SETTINGS_FILE"
+    chmod 600 "$SETTINGS_FILE"
+    log_info "settings.json permissions configured"
+  else
+    log_error "settings.json not found in repository!"
+  fi
+
+  # Setup .env file
+  if [ "$SKIP_TOKEN" = "true" ]; then
+    log_info "Skipping token configuration..."
     return 0
   fi
+
+  if [ -f "$ENV_FILE" ]; then
+    log_info ".env file already exists"
+    echo ""
+    echo -n "Do you want to reconfigure your token? (y/N): "
+    read -r RECONFIGURE
+    if [[ ! "$RECONFIGURE" =~ ^[Yy]$ ]]; then
+      log_info "Keeping existing .env file"
+      return 0
+    fi
+  fi
+
+  # Prompt for token
+  echo ""
+  echo "========================================================================="
+  echo " ListenBrainz Token Configuration"
+  echo "========================================================================="
+  echo ""
+  echo "To use this scrobbler, you need a ListenBrainz API token."
+  echo ""
+  echo "How to get your token:"
+  echo "  1. Visit: https://listenbrainz.org/settings/"
+  echo "  2. Log in or create an account"
+  echo "  3. Copy your 'User Token'"
+  echo ""
+  echo -n "Enter your ListenBrainz token: "
+  read -r LB_TOKEN
+  echo ""
+
+  # Validate token (basic check)
+  if [ -z "$LB_TOKEN" ]; then
+    log_error "Token cannot be empty!"
+  fi
+
+  if [ ${#LB_TOKEN} -lt 30 ]; then
+    echo "Warning: Token seems too short (expected ~36 characters)"
+    echo -n "Continue anyway? (y/N): "
+    read -r CONTINUE
+    if [[ ! "$CONTINUE" =~ ^[Yy]$ ]]; then
+      log_error "Installation cancelled"
+    fi
+  fi
+
+  # Create .env file
+  log_info "Creating .env file..."
+  cat > "$ENV_FILE" << EOF
+# ListenBrainz Configuration
+# Your ListenBrainz API token
+# Get it from: https://listenbrainz.org/settings/
+LISTENBRAINZ_TOKEN=$LB_TOKEN
+EOF
+
+  # Secure the .env file
+  chown "$TARGET_USER:$TARGET_USER" "$ENV_FILE"
+  chmod 600 "$ENV_FILE"
+
+  log_ok "Token configured successfully"
+  echo ""
 }
 
-# ------------------------------
-# START
-# ------------------------------
-log_info "Starting installation of $PROJECT_DESC..."
-log_info "Installation directory: $BASE_DIR"
+# Setup permissions
+setup_permissions() {
+  log_info "Setting up permissions..."
 
-# Check essential commands
-MISSING_ESSENTIAL=false
-for cmd in "${ESSENTIAL_DEPS[@]}"; do
-  if ! check_command "$cmd"; then MISSING_ESSENTIAL=true; fi
-done
-[ "$MISSING_ESSENTIAL" = "true" ] && log_error "Essential dependencies are missing. Please install them and try again."
+  TARGET_USER=${SUDO_USER:-$DEFAULT_USER}
+  if [ "$TARGET_USER" = "root" ]; then TARGET_USER=$DEFAULT_USER; fi
 
-# Check/install system packages (if apt is available)
-if command -v apt &> /dev/null; then
-  log_info "Checking system packages..."
-  MISSING_PACKAGES=()
-  for pkg in "${SYSTEM_PKGS[@]}"; do
-    if ! dpkg -s "$pkg" &> /dev/null; then
-      log_warn "$pkg not installed."
-      MISSING_PACKAGES+=("$pkg")
-    fi
-  done
-  if [ ${#MISSING_PACKAGES[@]} -gt 0 ]; then
-    execute_cmd "update package list" "sudo apt update"
-    execute_cmd "install required packages" "sudo apt install -y ${MISSING_PACKAGES[*]}"
+  # Set ownership (excluding __pycache__ directories)
+  find "$BASE_DIR" -type f ! -path "*/__pycache__/*" ! -name "*.pyc" -exec chown "$TARGET_USER:$TARGET_USER" {} \; 2>/dev/null || true
+  find "$BASE_DIR" -type d ! -path "*/__pycache__" -exec chown "$TARGET_USER:$TARGET_USER" {} \; 2>/dev/null || true
+
+  # Set permissions
+  find "$BASE_DIR" -type d -exec chmod 755 {} \;
+  find "$BASE_DIR" -type f -name "*.py" -exec chmod 644 {} \;
+
+  # Make scripts executable
+  chmod 755 "$BASE_DIR/install.sh" 2>/dev/null || true
+  chmod 755 "$BASE_DIR/src/main.py" 2>/dev/null || true
+
+  # Protect sensitive files
+  if [ -f "$SETTINGS_FILE" ]; then
+    chmod 600 "$SETTINGS_FILE"
+    chown "$TARGET_USER:$TARGET_USER" "$SETTINGS_FILE"
   fi
-fi
 
-# ------------------------------
-# PYTHON VENV
-# ------------------------------
-log_info "Setting up Python virtual environment..."
-if [ -d "$BASE_DIR/$VENV_DIR" ]; then
-  log_info "Virtual environment already exists."
-  if prompt_yes_no "Recreate the virtual environment?"; then
-    rm -rf "$BASE_DIR/$VENV_DIR"
-    execute_cmd "create virtual environment" "$PYTHON_CMD -m venv $VENV_DIR"
-    log_ok "Virtual environment created."
+  if [ -f "$ENV_FILE" ]; then
+    chmod 600 "$ENV_FILE"
+    chown "$TARGET_USER:$TARGET_USER" "$ENV_FILE"
   fi
-else
-  execute_cmd "create virtual environment" "$PYTHON_CMD -m venv $VENV_DIR"
-  log_ok "Virtual environment created."
-fi
 
-# pip inside venv
-PIP_CMD="$BASE_DIR/$VENV_DIR/bin/pip"
-[ -f "$PIP_CMD" ] || log_error "Pip command not found in virtual environment at $PIP_CMD."
+  # Ensure cache directories
+  CACHE_DIR="$BASE_DIR/src/cache"
+  mkdir -p "$CACHE_DIR" 2>/dev/null || true
+  chmod 755 "$BASE_DIR/src" "$CACHE_DIR" 2>/dev/null || true
+  chown -R "$TARGET_USER:$TARGET_USER" "$CACHE_DIR" 2>/dev/null || true
 
-execute_cmd "upgrade pip" "$PIP_CMD install --upgrade pip"
+  log_ok "Permissions configured"
+}
 
-# ------------------------------
-# PYTHON DEPENDENCIES
-# ------------------------------
-if [ ! -f "$BASE_DIR/$REQUIREMENTS_FILE" ]; then
-  log_error "$REQUIREMENTS_FILE not found."
-fi
-execute_cmd "install requirements" "$PIP_CMD install -r $REQUIREMENTS_FILE"
-
-# ------------------------------
-# PERMISSIONS
-# ------------------------------
-chmod +x "$BASE_DIR/src/main.py" 2>/dev/null || true
-chmod +x "$BASE_DIR/install.sh" 2>/dev/null || true
-chmod +x "$BASE_DIR/fix_permissions.sh" 2>/dev/null || true
-
-if [ -f "$BASE_DIR/fix_permissions.sh" ]; then
-  if command -v sudo &> /dev/null; then
-    execute_cmd "configure permissions" "sudo $BASE_DIR/fix_permissions.sh"
-  else
-    execute_cmd "configure permissions" "$BASE_DIR/fix_permissions.sh"
+# Setup systemd service
+setup_service() {
+  if [ "$SKIP_SERVICE" = "true" ]; then
+    log_info "Skipping systemd service setup..."
+    return 0
   fi
-fi
 
-# ------------------------------
-# SYSTEMD SERVICE
-# ------------------------------
-if [ -f "$SERVICE_EXAMPLE" ]; then
-  log_info "Installing systemd service..."
-  TMP_SERVICE="$(mktemp)"
-  # Replace default example path with current directory
-  sed "s|/home/pi/lbms|$BASE_DIR|g" "$SERVICE_EXAMPLE" > "$TMP_SERVICE"
-  if command -v sudo &> /dev/null; then
-    execute_cmd "install service file" "sudo cp -f '$TMP_SERVICE' '$SERVICE_FILE'"
+  if [ -f "$SERVICE_EXAMPLE" ]; then
+    log_info "Installing systemd service..."
+    TMP_SERVICE="$(mktemp)"
+    sed "s|/home/pi/lbms|$BASE_DIR|g" "$SERVICE_EXAMPLE" > "$TMP_SERVICE"
+    
+    execute_cmd "install service file" "sudo cp '$TMP_SERVICE' '$SERVICE_FILE'"
     execute_cmd "reload systemd daemon" "sudo systemctl daemon-reload"
-    # Enable and restart service by default (restart applies unit updates, starts if inactive)
-    execute_cmd "enable service" "sudo systemctl enable lbms.service"
-    execute_cmd "restart service" "sudo systemctl restart lbms.service"
+    execute_cmd "enable service" "sudo systemctl enable $SERVICE_NAME.service"
+    execute_cmd "start service" "sudo systemctl start $SERVICE_NAME.service"
+    
+    rm -f "$TMP_SERVICE"
+    log_ok "Service installed and started"
   else
-    log_warn "sudo not available. Copy $TMP_SERVICE to $SERVICE_FILE manually and run systemctl daemon-reload"
+    log_info "No service example found, skipping systemd setup"
   fi
-  rm -f "$TMP_SERVICE"
-  log_ok "Service prepared."
-else
-  log_warn "Example service file not found at $SERVICE_EXAMPLE"
-fi
+}
 
-# ------------------------------
-# ADDITIONAL CHECKS
-# ------------------------------
-CURR_FILE_JSON="$BASE_DIR/src/settings.json"
-if [ -f "$CURR_FILE_JSON" ]; then
-  CUR_FILE=$(jq -r '.currentsong_file // empty' "$CURR_FILE_JSON" 2>/dev/null || echo "")
-  if [ -n "$CUR_FILE" ] && [ ! -f "$CUR_FILE" ]; then
-    log_warn "Configured currentsong_file ($CUR_FILE) does not exist on this system. Check moOde configuration."
-  fi
-fi
+# Main execution
+log_info "Starting installation of $PROJECT_NAME..."
 
-# ------------------------------
-# SUMMARY
-# ------------------------------
+# Check system
+check_system
+
+# Check root privileges first
+check_root
+
+# Setup Python environment
+setup_python_env
+
+# Setup configuration (token and settings)
+setup_configuration
+
+# Setup permissions
+setup_permissions
+
+# Setup service
+setup_service
+
+# Summary
 echo ""
 echo "==================================================================="
-echo " Installation complete: $PROJECT_DESC"
-echo " Directory: $BASE_DIR"
-echo " Python Environment: $VENV_DIR"
-if [ -f "$SERVICE_FILE" ]; then
-  echo " Service: $SERVICE_FILE"
-  echo " Next steps:"
-  echo "   sudo systemctl enable lbms.service"
-  echo "   sudo systemctl start lbms.service"
-  echo " Logs:"
-  echo "   sudo journalctl -u lbms.service -f"
-else
-  echo " Systemd service not installed (example file missing or sudo unavailable)."
-fi
-echo " Manual run:"
-echo "   $BASE_DIR/$VENV_DIR/bin/python3 $BASE_DIR/src/main.py"
+echo " Installation Complete: $PROJECT_NAME"
 echo "==================================================================="
+echo ""
+echo " Installation Directory: $BASE_DIR"
+echo " Python Environment: $VENV_DIR"
+echo " Configuration: $SETTINGS_FILE"
+echo " Token stored in: $ENV_FILE (secure)"
+echo ""
+if [ "$SKIP_SERVICE" != "true" ] && [ -f "$SERVICE_FILE" ]; then
+  echo " Systemd Service: $SERVICE_NAME.service"
+  echo ""
+  echo " Service Commands:"
+  echo "   sudo systemctl status $SERVICE_NAME"
+  echo "   sudo systemctl restart $SERVICE_NAME"
+  echo "   sudo systemctl stop $SERVICE_NAME"
+  echo "   sudo journalctl -u $SERVICE_NAME -f"
+  echo ""
+else
+  echo " Manual Execution:"
+  echo "   $BASE_DIR/$VENV_DIR/bin/python3 $BASE_DIR/src/main.py"
+  echo ""
+fi
+echo " Configuration Files:"
+echo "   Edit settings: nano $SETTINGS_FILE"
+echo "   Change token: nano $ENV_FILE"
+echo ""
+echo " Documentation:"
+echo "   README: $BASE_DIR/README.md"
+echo "   .env Guide: $BASE_DIR/docs/ENV_GUIDE.md"
+echo ""
+echo "==================================================================="
+echo " Installation successful! The scrobbler is ready to use."
+echo "==================================================================="
+echo ""
 
 exit 0

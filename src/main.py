@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# ListenBrainz moOde Scrobbler v1.0.3
+# ListenBrainz moOde Scrobbler v1.0.5
 # Copyright (C) 2025 StreamDigger
 #
 # This program is free software: you can redistribute it and/or modify
@@ -20,8 +20,18 @@ from watchdog.events import FileSystemEventHandler
 from liblistenbrainz import ListenBrainz, Listen
 from threading import Thread, Lock, Timer
 import sys
+from dotenv import load_dotenv
 from logger import Logger
 from __version__ import __version__, __author__, __copyright__
+
+# Constants
+MAX_CACHE_SIZE = 1000
+SMALL_QUEUE_THRESHOLD = 3
+BATCH_SIZE = 10
+CONNECTION_CHECK_INTERVAL = 60  # seconds
+SAVE_DELAY = 5.0  # seconds
+DEFAULT_MIN_PLAY_TIME = 30  # seconds
+LISTENING_FROM = 'moOde audio player'
 
 
 def print_banner():
@@ -34,9 +44,23 @@ Version {__version__}
 
 
 class ListenCache:
+    """
+    Manages a cache of pending listen submissions.
+
+    Handles storing failed submissions and retrying them when connection is restored.
+    Uses atomic file operations and thread-safe locking.
+    """
+
     def __init__(self, cache_file, logger):
+        """
+        Initialize the listen cache.
+
+        Args:
+            cache_file: Path to the cache file for storing pending listens
+            logger: Logger instance for logging operations
+        """
         self.cache_file = cache_file
-        self.pending_listens = deque(maxlen=1000)
+        self.pending_listens = deque(maxlen=MAX_CACHE_SIZE)
         self.log = logger
         self._save_timer = None
         self._lock = Lock()
@@ -51,7 +75,7 @@ class ListenCache:
             with open(self.cache_file, 'r') as f:
                 content = f.read().strip()
                 if content:
-                    self.pending_listens = deque(json.loads(content), maxlen=1000)
+                    self.pending_listens = deque(json.loads(content), maxlen=MAX_CACHE_SIZE)
                 else:
                     self.save_cache()
         except Exception as e:
@@ -84,21 +108,40 @@ class ListenCache:
             self.log.error(f"Failed to save cache: {e}")
 
     def _schedule_save(self):
+        """Schedule a delayed cache save to reduce I/O operations."""
         with self._lock:
             if self._save_timer:
                 self._save_timer.cancel()
-            
-            self._save_timer = Timer(5.0, self.save_cache)
+
+            self._save_timer = Timer(SAVE_DELAY, self.save_cache)
             self._save_timer.start()
 
     def add_listen(self, listen_dict):
+        """
+        Add a listen to the pending queue.
+
+        Args:
+            listen_dict: Dictionary containing listen metadata
+        """
         with self._lock:
             self.pending_listens.append(listen_dict)
         self._schedule_save()
 
     def process_pending_listens(self, client):
+        """
+        Process pending listens by submitting them to ListenBrainz.
+
+        Uses batch submission for queues >= SMALL_QUEUE_THRESHOLD,
+        single submission for smaller queues.
+
+        Args:
+            client: ListenBrainz client instance
+
+        Returns:
+            bool: True if all listens were processed successfully
+        """
         with self._lock:
-            small_queue = len(self.pending_listens) < 3
+            small_queue = len(self.pending_listens) < SMALL_QUEUE_THRESHOLD
         if small_queue:
             to_process = []
             with self._lock:
@@ -118,7 +161,7 @@ class ListenCache:
             return True
 
         with self._lock:
-            batch_size = min(10, len(self.pending_listens))
+            batch_size = min(BATCH_SIZE, len(self.pending_listens))
             extracted = []
             for _ in range(batch_size):
                 if not self.pending_listens:
@@ -154,13 +197,31 @@ class ListenCache:
 
 
 class ListenBrainzScrobbler(FileSystemEventHandler):
+    """
+    Main scrobbler class that monitors file changes and submits listens.
+
+    Monitors moOde's currentsong.txt file and submits listening data
+    to ListenBrainz API, with support for caching failed submissions.
+    """
+
     def __init__(self):
+        """Initialize the scrobbler with settings and logging."""
         print(print_banner())
+
+        # Load environment variables
+        load_dotenv()
+
         self.settings = self.load_settings()
         self.log = Logger(self.settings)
         self.log.debug("Settings loaded successfully")
         self.client = None
-        self.token = self.settings['listenbrainz_token']
+
+        # Get token from environment variable or settings
+        self.token = os.getenv('LISTENBRAINZ_TOKEN') or self.settings.get('listenbrainz_token')
+
+        if not self.token:
+            print("ERROR: LISTENBRAINZ_TOKEN not found in environment or settings.json")
+            exit(1)
         
         self.current_song = None
         self.play_start_time = None
@@ -168,9 +229,9 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
         self.retry_delay = self.settings['retry']['delay']
 
         try:
-            self.min_play_time = max(0, int(self.settings.get('min_play_time', 30)))
+            self.min_play_time = max(0, int(self.settings.get('min_play_time', DEFAULT_MIN_PLAY_TIME)))
         except Exception:
-            self.min_play_time = 30
+            self.min_play_time = DEFAULT_MIN_PLAY_TIME
         self._currentsong_realpath = os.path.realpath(self.settings['currentsong_file'])
         
         self.listen_cache = None
@@ -192,6 +253,12 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
         self.log.error(safe_msg)
 
     def initialize(self):
+        """
+        Initialize the ListenBrainz client and cache system.
+
+        Returns:
+            bool: True if initialization successful, False otherwise
+        """
         self.log.wait("Validating ListenBrainz token...")
         try:
             self.client = ListenBrainz()
@@ -203,7 +270,6 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
 
         if self.settings['features']['enable_cache']:
             cache_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cache')
-            cache_dir = os.path.join(cache_dir, 'listenbrainz-moode-scrobbler')
             self.listen_cache = ListenCache(
                 os.path.join(cache_dir, self.settings['cache_file']),
                 self.log
@@ -213,11 +279,13 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
         return True
 
     def _check_connection_periodically(self):
+        """Background thread that periodically checks connection and processes cache."""
         while True:
-            time.sleep(60)
+            time.sleep(CONNECTION_CHECK_INTERVAL)
             self.check_connection_and_process_cache()
             
     def check_connection_and_process_cache(self):
+        """Check if connection is available and process any pending cached listens."""
         if not self.settings['features']['enable_cache'] or not self.listen_cache:
             return
             
@@ -238,10 +306,11 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
                 else:
                     self.log.warning("Partial cache processing")
                     
-        except Exception:
-            pass
+        except Exception as e:
+            self.log.debug(f"Connection check failed: {e}")
 
     def check_initial_playback(self):
+        """Check if a track is already playing when the scrobbler starts."""
         self.log.info("Checking for currently playing track...")
         initial_song = self.parse_currentsong()
         
@@ -252,6 +321,12 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
             self.log.info("No track currently playing")
 
     def parse_currentsong(self):
+        """
+        Parse moOde's currentsong.txt file.
+
+        Returns:
+            dict: Song information with title, artist, album, state or None if invalid
+        """
         try:
             with open(self.settings['currentsong_file'], 'r', encoding='utf-8') as f:
                 lines = f.readlines()
@@ -285,6 +360,15 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
             return None
 
     def submit_playing_now(self, song_info):
+        """
+        Submit 'now playing' status to ListenBrainz.
+
+        Args:
+            song_info: Dictionary with track information
+
+        Returns:
+            bool: True if submission successful
+        """
         if not self.settings['features']['enable_listening_now']:
             self.log.debug("Listening now... feature disabled")
             return True
@@ -295,7 +379,7 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
                 track_name=song_info['title'],
                 artist_name=song_info['artist'],
                 release_name=song_info.get('album', ''),
-                listening_from='moOde audio player'
+                listening_from=LISTENING_FROM
             )
             self.client.submit_playing_now(listen)
             self.log.info(f"Listening now... {song_info['title']} by {song_info['artist']}")
@@ -305,6 +389,14 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
             return False
 
     def submit_listen(self, song_info):
+        """
+        Submit a completed listen (scrobble) to ListenBrainz.
+
+        Only submits if the track has been played for at least min_play_time seconds.
+
+        Args:
+            song_info: Dictionary with track information
+        """
         if not self.settings['features']['enable_listen']:
             return
 
@@ -320,7 +412,7 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
             artist_name=song_info['artist'],
             release_name=song_info.get('album', ''),
             listened_at=int(current_time),
-            listening_from='moOde audio player'
+            listening_from=LISTENING_FROM
         )
 
         for attempt in range(self.retry_count):
@@ -344,19 +436,34 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
                 'artist_name': song_info['artist'],
                 'release_name': song_info.get('album', ''),
                 'listened_at': int(time.time()),
-                'listening_from': 'moOde audio player'
+                'listening_from': LISTENING_FROM
             })
             self.log.ok("Submission saved to cache")
         else:
             self.log.error("Submission lost - Cache feature is disabled")
 
     def clean_text(self, text):
+        """
+        Clean and decode HTML entities from text.
+
+        Args:
+            text: Raw text string
+
+        Returns:
+            str: Cleaned and decoded text
+        """
         if not text:
             return ""
         decoded_text = unescape(text)
         return decoded_text.strip()
 
     def handle_song_update(self, song_info):
+        """
+        Handle song information updates from currentsong.txt.
+
+        Args:
+            song_info: Dictionary with current song information
+        """
         if not song_info:
             return
 
@@ -395,18 +502,27 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
             if os.path.realpath(event.src_path) == self._currentsong_realpath:
                 self.log.debug("Currentsong file changed, handling update")
                 self.handle_song_update(self.parse_currentsong())
-        except Exception:
-            pass
+        except Exception as e:
+            self.log.debug(f"Error handling file modification: {e}")
 
     def on_created(self, event):
         try:
             if os.path.realpath(event.src_path) == self._currentsong_realpath:
                 self.log.debug("Currentsong file created, handling update")
                 self.handle_song_update(self.parse_currentsong())
-        except Exception:
-            pass
+        except Exception as e:
+            self.log.debug(f"Error handling file creation: {e}")
 
     def load_settings(self):
+        """
+        Load settings from settings.json file.
+
+        Returns:
+            dict: Settings dictionary
+
+        Raises:
+            SystemExit: If settings file cannot be loaded
+        """
         try:
             with open(os.path.join(os.path.dirname(__file__), 'settings.json'), 'r') as f:
                 return json.load(f)
@@ -415,13 +531,22 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
             exit(1)
 
     def should_ignore(self, song_info):
+        """
+        Check if song should be ignored based on configured filter patterns.
+
+        Args:
+            song_info: Dictionary with song information
+
+        Returns:
+            bool: True if song should be ignored
+        """
         def match_patterns(text, patterns):
             if not text or not patterns:
                 return False
-            
+
             if not self._case_sensitive:
                 text = text.lower()
-                
+
             return any(pattern in text for pattern in patterns)
 
         for field, patterns in self._ignore_patterns.items():
@@ -432,6 +557,7 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
         return False
 
     def cleanup(self):
+        """Save cache and perform cleanup before shutdown."""
         if self.listen_cache:
             self.listen_cache.save_cache()
 

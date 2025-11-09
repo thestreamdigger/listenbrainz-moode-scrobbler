@@ -137,7 +137,7 @@ To have the scrobbler run automatically every time moOde starts up, you can set 
 
 1. Copy the example service file:
 ```bash
-sudo cp lbms.service.example /etc/systemd/system/lbms.service
+sudo cp examples/lbms.service.example /etc/systemd/system/lbms.service
 ```
 
 2. Edit the service file if needed (e.g., to adjust paths):

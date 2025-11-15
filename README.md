@@ -370,7 +370,6 @@ Contributions are welcome! Feel free to:
 
 - [moOde audio player](https://moodeaudio.org/) - Excellent audio player for Raspberry Pi
 - [ListenBrainz](https://listenbrainz.org/) - Open-source music tracking service
-- [python-dotenv](https://github.com/theskumar/python-dotenv) - Environment variable management
 
 ## License
 

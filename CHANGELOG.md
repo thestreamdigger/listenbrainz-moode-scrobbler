@@ -20,7 +20,6 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [1.0.7] - 2025-12-22
 ### Changed
 - Code style consistency (imports, error handling, dict access)
-- Removed trivial docstrings, kept only meaningful ones
 - Token attribute now private (_token)
 
 ### Fixed

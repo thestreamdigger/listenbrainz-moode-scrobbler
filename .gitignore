@@ -40,3 +40,6 @@ ENV/
 
 # Cache directories
 src/cache/
+
+# Claude Code
+.claude/

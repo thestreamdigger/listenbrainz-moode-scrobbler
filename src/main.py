@@ -26,7 +26,7 @@ from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
 # Local
-from __version__ import __copyright__, __version__
+from __version__ import __version__
 from logger import Logger
 
 # Constants
@@ -46,7 +46,7 @@ SONG_IDENTITY_FIELDS = ('title', 'artist', 'album')
 
 
 def print_banner():
-    print(f"\nLISTENBRAINZ-MOODE-SCROBBLER\nVersion {__version__}\n{__copyright__}\n")
+    print(f"\nLISTENBRAINZ-MOODE-SCROBBLER v{__version__}\n")
 
 
 class ListenCache:

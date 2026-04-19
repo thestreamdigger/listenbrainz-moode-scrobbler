@@ -5,8 +5,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [1.3.0] - 2026-04-18
 ### Added
-- Canonical scrobble rule: submit when elapsed >= min(duration * 0.5, 240s),
-  floor at min_play_time when duration is missing
+- Canonical scrobble rule: submit when elapsed >= min(duration * 0.5, 240s).
+  Falls back to 240s when duration is missing (stream-like). min_play_time
+  remains as a floor in both branches.
 - submission_client / submission_client_version / media_player in
   additional_info (MetaBrainz recommendation)
 - duration_ms forwarded from moOde currentsong.txt

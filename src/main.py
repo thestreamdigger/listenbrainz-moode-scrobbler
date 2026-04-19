@@ -351,12 +351,14 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
             return None
 
     def _canonical_delay(self, song_info):
-        """Scrobble when elapsed >= min(duration * 0.5, 240s). Floor at min_play_time."""
+        """Scrobble delay: min(duration * 0.5, 240s), floor at min_play_time.
+        Without duration (streams): 240s (canonical ceiling)."""
         duration_ms = self._extract_duration_ms(song_info)
         if duration_ms:
             canonical = min(int(duration_ms / 1000 * CANONICAL_HALF), CANONICAL_MAX_DELAY)
-            return max(canonical, self.min_play_time)
-        return self.min_play_time
+        else:
+            canonical = CANONICAL_MAX_DELAY
+        return max(canonical, self.min_play_time)
 
     def _build_additional_info(self, song_info):
         info = {

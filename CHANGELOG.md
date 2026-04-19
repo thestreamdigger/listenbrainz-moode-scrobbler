@@ -3,29 +3,39 @@
 All notable changes to this project will be documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.3.0] - 2026-04-18
+### Added
+- Canonical scrobble rule: submit when elapsed >= min(duration * 0.5, 240s),
+  floor at min_play_time when duration is missing
+- submission_client / submission_client_version / media_player in
+  additional_info (MetaBrainz recommendation)
+- duration_ms forwarded from moOde currentsong.txt
+- release_mbid forwarded from musicbrainz_albumid (when present)
+- --dry-run flag: runs pipeline without submitting, logs intended payload
+- --version flag
+
+### Changed
+- Dropped deprecated listening_from field in favor of submission_client
+  and media_player
+- Cached listens now use the same payload shape as live submissions
+
 ## [1.2.0] - 2026-04-18
 ### Added
 - on_moved handler for atomic rename writes to currentsong.txt
-- Cache backup (.corrupt.<timestamp>) before overwriting corrupted file
-- Token redaction in logger (add_redaction) applied across all log levels
-- Shutdown event makes connection check sleep interruptible
-- Non-MPD renderer detection in parse log (stub currentsong.txt entries)
-- 'file' field added to SONG_FIELDS for renderer detection
+- Token redaction in logger applied across all log levels
 
 ### Changed
 - Log style aligned with project convention (terse, colon for values, err suffix)
-- load_dotenv uses explicit path relative to __file__ with fallback
-- submit_listen aborts retry loop on shutdown and falls back to cache
+- load_dotenv uses explicit path relative to file location
 - _delayed_submit validates current track + play_start before submitting
-- _save_unlocked adds fsync on file fd and parent directory
-- signal_handler no longer double-calls cleanup (finally handles it)
-- Removed _safe_log_error (redundant with logger redaction)
+- submit_listen aborts retry loop on shutdown and falls back to cache
+- Connection check thread uses Event.wait for interruptible shutdown
 
 ### Fixed
-- Data loss in process_pending_listens small_queue branch: items after
-  first failure were drained but not re-enqueued
-- Durability gap on atomic cache write (missing fsync before replace)
-- Corrupted cache silently destroyed on parse error
+- Data loss in process_pending_listens small_queue: items after first
+  failure were drained but not re-enqueued
+- Durability gap on atomic cache write (now fsyncs file + parent dir)
+- Corrupted cache no longer silently destroyed (backed up as .corrupt.<ts>)
 
 ## [1.1.0] - 2026-02-07
 ### Changed

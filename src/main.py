@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# ListenBrainz moOde Scrobbler v1.2.0
+# ListenBrainz moOde Scrobbler v1.3.0
 # Copyright (C) 2025 StreamDigger
 #
 # This program is free software: you can redistribute it and/or modify
@@ -9,6 +9,7 @@
 # (at your option) any later version.
 
 # Standard library
+import argparse
 import json
 import os
 import signal
@@ -37,11 +38,15 @@ BATCH_SIZE = 10
 CONNECTION_CHECK_INTERVAL = 60
 SAVE_DELAY = 5
 DEFAULT_MIN_PLAY_TIME = 30
-LISTENING_FROM = 'moOde audio player'
+CANONICAL_MAX_DELAY = 240
+CANONICAL_HALF = 0.5
+SUBMISSION_CLIENT = 'lbms'
+MEDIA_PLAYER = 'MPD'
 
 SONG_FIELDS = {
     'file', 'title', 'artist', 'album', 'state', 'track', 'date',
-    'composer', 'genre', 'duration', 'bitrate', 'encoded'
+    'composer', 'genre', 'duration', 'bitrate', 'encoded',
+    'musicbrainz_albumid'
 }
 SONG_IDENTITY_FIELDS = ('title', 'artist', 'album')
 
@@ -200,8 +205,10 @@ class ListenCache:
 class ListenBrainzScrobbler(FileSystemEventHandler):
     """Monitors moOde currentsong.txt and submits listens to ListenBrainz with caching support."""
 
-    def __init__(self):
+    def __init__(self, dry_run=False):
         print_banner()
+
+        self.dry_run = dry_run
 
         env_path = Path(__file__).resolve().parent.parent / '.env'
         if env_path.exists():
@@ -334,6 +341,51 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
         except (ValueError, AttributeError):
             return None
 
+    def _extract_duration_ms(self, song_info):
+        raw = song_info.get('duration')
+        if not raw:
+            return None
+        try:
+            return int(float(raw) * 1000)
+        except (ValueError, TypeError):
+            return None
+
+    def _canonical_delay(self, song_info):
+        """Scrobble when elapsed >= min(duration * 0.5, 240s). Floor at min_play_time."""
+        duration_ms = self._extract_duration_ms(song_info)
+        if duration_ms:
+            canonical = min(int(duration_ms / 1000 * CANONICAL_HALF), CANONICAL_MAX_DELAY)
+            return max(canonical, self.min_play_time)
+        return self.min_play_time
+
+    def _build_additional_info(self, song_info):
+        info = {
+            'media_player': MEDIA_PLAYER,
+            'submission_client': SUBMISSION_CLIENT,
+            'submission_client_version': __version__,
+        }
+        tracknumber = self._extract_tracknumber(song_info)
+        if tracknumber is not None:
+            info['tracknumber'] = tracknumber
+        duration_ms = self._extract_duration_ms(song_info)
+        if duration_ms:
+            info['duration_ms'] = duration_ms
+        release_mbid = song_info.get('musicbrainz_albumid')
+        if release_mbid:
+            info['release_mbid'] = release_mbid
+        return info
+
+    def _build_listen_dict(self, song_info, listened_at=None):
+        d = {
+            'track_name': song_info['title'],
+            'artist_name': song_info['artist'],
+            'release_name': song_info.get('album', ''),
+            'additional_info': self._build_additional_info(song_info),
+        }
+        if listened_at is not None:
+            d['listened_at'] = listened_at
+        return d
+
     def _same_track(self, a, b):
         if a is None or b is None:
             return False
@@ -341,16 +393,12 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
 
     def submit_playing_now(self, song_info):
         try:
-            tracknumber = self._extract_tracknumber(song_info)
-
-            listen = Listen(
-                track_name=song_info['title'],
-                artist_name=song_info['artist'],
-                release_name=song_info.get('album', ''),
-                listening_from=LISTENING_FROM,
-                tracknumber=tracknumber
-            )
-            self.client.submit_playing_now(listen)
+            listen_dict = self._build_listen_dict(song_info)
+            if self.dry_run:
+                self.log.info(f"[DRY] Now playing: {song_info['title']} - {song_info['artist']}")
+                self.log.debug(f"[DRY] payload: {listen_dict}")
+                return True
+            self.client.submit_playing_now(Listen(**listen_dict))
             self.log.info(f"Now playing: {song_info['title']} - {song_info['artist']}")
             return True
         except Exception as e:
@@ -361,30 +409,20 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
         if not self.settings['features']['enable_listen']:
             return
 
-        play_time = time.time() - play_start_time
-
-        if play_time < self.min_play_time:
-            self.log.debug(f"Skip (< min): {song_info.get('title')}")
-            return
-
-        tracknumber = self._extract_tracknumber(song_info)
         listened_at = int(time.time())
+        listen_dict = self._build_listen_dict(song_info, listened_at)
 
-        listen = Listen(
-            track_name=song_info['title'],
-            artist_name=song_info['artist'],
-            release_name=song_info.get('album', ''),
-            listened_at=listened_at,
-            listening_from=LISTENING_FROM,
-            tracknumber=tracknumber
-        )
+        if self.dry_run:
+            self.log.info(f"[DRY] Submit: {song_info['title']} - {song_info['artist']}")
+            self.log.debug(f"[DRY] payload: {listen_dict}")
+            return
 
         for attempt in range(self.retry_count):
             if self._shutdown_event.is_set():
                 self.log.warning("Shutdown: retries aborted")
                 break
             try:
-                self.client.submit_single_listen(listen)
+                self.client.submit_single_listen(Listen(**listen_dict))
                 self.log.info(f"Submitted: {song_info['title']} - {song_info['artist']}")
                 return
             except Exception as e:
@@ -400,14 +438,7 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
 
         if self.listen_cache:
             self.log.wait("Cache save (retry later)")
-            self.listen_cache.add_listen({
-                'track_name': song_info.get('title', ''),
-                'artist_name': song_info.get('artist', ''),
-                'release_name': song_info.get('album', ''),
-                'listened_at': listened_at,
-                'listening_from': LISTENING_FROM,
-                'tracknumber': tracknumber
-            })
+            self.listen_cache.add_listen(listen_dict)
             self.log.ok("Cached")
         else:
             self.log.error("Lost: cache disabled")
@@ -444,11 +475,12 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
 
             if self.settings['features']['enable_listen']:
                 play_start = self.play_start_time
-                Thread(target=self._delayed_submit, args=(song_info, play_start), daemon=True).start()
+                delay = self._canonical_delay(song_info)
+                Thread(target=self._delayed_submit, args=(song_info, play_start, delay), daemon=True).start()
 
-    def _delayed_submit(self, song_info, play_start_time):
-        self.log.debug(f"Delayed submit: {song_info.get('title')}")
-        if self._shutdown_event.wait(self.min_play_time):
+    def _delayed_submit(self, song_info, play_start_time, delay):
+        self.log.debug(f"Delayed submit: {song_info.get('title')} ({delay}s)")
+        if self._shutdown_event.wait(delay):
             self.log.debug(f"Shutdown during delay: {song_info.get('title')}")
             return
         if self.play_start_time != play_start_time or not self._same_track(song_info, self.current_song):
@@ -509,7 +541,16 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
             self.listen_cache.save_cache()
 
 
+def _parse_args():
+    parser = argparse.ArgumentParser(description='ListenBrainz moOde Scrobbler')
+    parser.add_argument('--dry-run', action='store_true',
+                        help='Run pipeline without submitting to ListenBrainz')
+    parser.add_argument('--version', action='version', version=f'lbms {__version__}')
+    return parser.parse_args()
+
+
 def main():
+    args = _parse_args()
     scrobbler = None
     observer = None
 
@@ -522,7 +563,9 @@ def main():
     signal.signal(signal.SIGINT, signal_handler)
 
     try:
-        scrobbler = ListenBrainzScrobbler()
+        scrobbler = ListenBrainzScrobbler(dry_run=args.dry_run)
+        if args.dry_run:
+            scrobbler.log.wait("Dry run")
 
         if not scrobbler.initialize():
             scrobbler.log.error("Init failed, exit")

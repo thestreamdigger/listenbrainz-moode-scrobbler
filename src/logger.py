@@ -69,7 +69,7 @@ class Logger:
 
                 print(" ".join(parts), flush=True)
             except Exception as e:
-                print(f"[{level}] {message} (Format error: {e})", flush=True)
+                print(f"[{level}] {message} (Format err: {e})", flush=True)
 
     def debug(self, message): self._log("DEBUG", message)
     def info(self, message): self._log("INFO", message)

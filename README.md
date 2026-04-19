@@ -1,28 +1,30 @@
 # ListenBrainz moOde Scrobbler
 
-[![Version](https://img.shields.io/badge/version-1.0.6-blue.svg)](https://github.com/thestreamdigger/listenbrainz-moode-scrobbler)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://github.com/thestreamdigger/listenbrainz-moode-scrobbler)
 [![License](https://img.shields.io/badge/license-GPL%20v3-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/)
 [![Status](https://img.shields.io/badge/status-stable-brightgreen.svg)]()
 [![Raspberry Pi](https://img.shields.io/badge/platform-Raspberry%20Pi-C51A4A.svg)](https://www.raspberrypi.org/)
 [![moOde](https://img.shields.io/badge/works%20with-moOde%20audio-orange.svg)](https://moodeaudio.org/)
 
-Python scrobbler to integrate moOde audio player (Raspberry Pi) with ListenBrainz, enabling automatic tracking of played tracks.
+Python scrobbler for moOde audio player (Raspberry Pi) to ListenBrainz. Watches `currentsong.txt` and submits played tracks.
 
 ## About
 
-This script was developed as a hobby project and a learning exercise in Python programming. It monitors tracks played on the moOde audio player and sends them to ListenBrainz, keeping your listening history up to date.
+Hobby project. Monitors tracks played via moOde, submits to ListenBrainz.
+
+Supported sources: MPD (local files, internet radio, UPnP via upmpdcli). Airplay, Spotify Connect and Bluetooth are out of scope — moOde writes only a renderer stub to `currentsong.txt` for those.
 
 ## Features
 
-- Real-time "Listening now..." status updates
-- Automatic track scrobbling with configurable minimum play time
-- Offline cache with automatic retry when connection is restored
-- Intelligent batch processing for efficient network usage
-- Reads track metadata (title, artist, album) from moOde
-- Secure credential management with `.env` file
-- Optional filtering to ignore certain patterns (e.g., radio streams)
-- Simple JSON configuration
+- Real-time "listening now" status
+- Scrobble with configurable minimum play time
+- Offline cache with automatic retry
+- Batch processing for pending scrobbles
+- Metadata parsing from moOde `currentsong.txt`
+- `.env` token storage
+- Pattern filters (ignore radio streams, unknown artists)
+- JSON configuration
 
 ## Requirements
 
@@ -70,11 +72,7 @@ sudo ./install.sh -q
 ./install.sh --help
 ```
 
-**Note:** By default, the installer will:
-- Create the systemd service file at `/etc/systemd/system/lbms.service`
-- Enable the service to start automatically on boot
-- Start the service immediately after installation
-- The service will run as the user who executed the installer (or `pi` user by default)
+**Note:** installer creates `/etc/systemd/system/lbms.service`, enables auto-start on boot, and starts the service. Runs as `$SUDO_USER` (fallback `pi`).
 
 ## Configuration
 
@@ -98,14 +96,11 @@ Your ListenBrainz token is stored here:
 LISTENBRAINZ_TOKEN=your_token_here
 ```
 
-This file is automatically created by the installer when you run `sudo ./install.sh`.
+Auto-created by installer. Mode `600`, listed in `.gitignore`.
 
-**Security:** The `.env` file is protected with `600` permissions and listed in `.gitignore` to prevent accidental exposure.
+#### 2. `src/settings.json` - Application Settings
 
-#### 2. `src/settings.json` - Application Settings (Included)
-
-This file is included in the repository and contains all application settings (no token).
-Configure scrobbler behavior by editing this file:
+Committed to repo (no token). Edit to configure scrobbler behavior:
 
 ```json
 {
@@ -160,12 +155,13 @@ Configure scrobbler behavior by editing this file:
 
 ### moOde Configuration
 
-Enable moOde to generate the `currentsong.txt` file:
+Enable `currentsong.txt` output in moOde:
 
-1. Access the moOde web interface
-2. Go to **Configure** → **System** → **Local Services**
-3. Enable **Metadata file** option
-4. This creates `/var/local/www/currentsong.txt` with track information
+1. Open moOde web UI
+2. **Configure** → **Audio** → **MPD options**
+3. Enable **Metadata file**
+
+Writes to `/var/local/www/currentsong.txt`. Scrobbler will not see updates if disabled.
 
 ## Usage
 
@@ -204,20 +200,17 @@ python3 src/main.py
 
 ## Advanced Features
 
-### Smart Cache Processing
+### Cache Processing
 
-The scrobbler includes an intelligent cache system:
-
-- **Real-time processing:** Individual scrobbles submitted immediately for instant feedback
-- **Batch processing:** Automatically switches to batches (up to 10 scrobbles) when recovering from offline periods
-- **Periodic checks:** Monitors connection every 60 seconds and processes pending scrobbles
-- **Optimized I/O:** Delayed writes reduce disk operations
-
-This hybrid approach ensures both real-time accuracy and efficient recovery after connection issues.
+- Individual submission for small queues (< 3 pending)
+- Batch submission (up to 10) for larger queues after offline recovery
+- Connection re-check every 60s processes pending scrobbles
+- Atomic writes (`fsync` + `rename`) on cache save
+- Backup (`.corrupt.<timestamp>`) on parse errors
 
 ### Content Filtering
 
-Filter out unwanted scrobbles using patterns:
+Skip scrobbles by pattern:
 
 ```json
 {
@@ -232,14 +225,14 @@ Filter out unwanted scrobbles using patterns:
 }
 ```
 
-Tracks matching any pattern will be skipped.
+Tracks matching any pattern are skipped.
 
 ## Troubleshooting
 
 ### Token not found
 
 ```
-ERROR: LISTENBRAINZ_TOKEN not found in environment or settings.json
+[ERROR] Token not found: env or settings.json
 ```
 
 **Solution:**
@@ -277,13 +270,6 @@ sudo journalctl -u lbms -n 100
 sudo systemctl restart lbms
 ```
 
-### Testing the .env file
-
-```bash
-# Run test script
-python test_env.py
-```
-
 ## Manual Installation
 
 If you prefer manual setup without the installer:
@@ -319,7 +305,7 @@ sudo systemctl start lbms.service
 python3 src/main.py
 ```
 
-**Note:** If you install the systemd service (step 5), the scrobbler will run automatically in the background. You can check its status with `sudo systemctl status lbms`.
+**Note:** systemd install runs scrobbler in background. Check with `sudo systemctl status lbms`.
 
 ## Project Structure
 
@@ -348,33 +334,22 @@ lbms/
 - **[CHANGELOG.md](CHANGELOG.md)** - Version history and changes
 - **[LICENSE](LICENSE)** - GPL v3 license details
 
-## Security Best Practices
+## Security
 
-- Keep `.env` file secure (never commit to Git)
-- Never hardcode tokens in code
-- Never share your token publicly
+- `.env` gitignored, mode 600
+- Token redacted in all log output
+- Never hardcode tokens
 
 ## Contributing
 
-Contributions are welcome! Feel free to:
-- Report bugs
-- Suggest features
-- Submit pull requests
-- Improve documentation
+Contributions welcome: bug reports, features, PRs, docs.
 
 ## Acknowledgments
 
-- [moOde audio player](https://moodeaudio.org/) - Excellent audio player for Raspberry Pi
-- [ListenBrainz](https://listenbrainz.org/) - Open-source music tracking service
-- [python-dotenv](https://github.com/theskumar/python-dotenv) - Environment variable management
+- [moOde audio player](https://moodeaudio.org/) — audio player for Raspberry Pi
+- [ListenBrainz](https://listenbrainz.org/) — open-source music tracking
+- [python-dotenv](https://github.com/theskumar/python-dotenv) — env var loader
 
 ## License
 
-This project is free software licensed under the **GNU General Public License v3.0**.
-
-You can freely use, modify, and share this software. See the [LICENSE](LICENSE) file for details.
-
----
-
-**Made with ❤️ for the moOde and ListenBrainz communities**
-
+GNU General Public License v3.0. See [LICENSE](LICENSE).

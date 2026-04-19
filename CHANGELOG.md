@@ -3,6 +3,30 @@
 All notable changes to this project will be documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.2.0] - 2026-04-18
+### Added
+- on_moved handler for atomic rename writes to currentsong.txt
+- Cache backup (.corrupt.<timestamp>) before overwriting corrupted file
+- Token redaction in logger (add_redaction) applied across all log levels
+- Shutdown event makes connection check sleep interruptible
+- Non-MPD renderer detection in parse log (stub currentsong.txt entries)
+- 'file' field added to SONG_FIELDS for renderer detection
+
+### Changed
+- Log style aligned with project convention (terse, colon for values, err suffix)
+- load_dotenv uses explicit path relative to __file__ with fallback
+- submit_listen aborts retry loop on shutdown and falls back to cache
+- _delayed_submit validates current track + play_start before submitting
+- _save_unlocked adds fsync on file fd and parent directory
+- signal_handler no longer double-calls cleanup (finally handles it)
+- Removed _safe_log_error (redundant with logger redaction)
+
+### Fixed
+- Data loss in process_pending_listens small_queue branch: items after
+  first failure were drained but not re-enqueued
+- Durability gap on atomic cache write (missing fsync before replace)
+- Corrupted cache silently destroyed on parse error
+
 ## [1.1.0] - 2026-02-07
 ### Changed
 - Song identity comparison uses only title/artist/album (prevents duplicate scrobbles)

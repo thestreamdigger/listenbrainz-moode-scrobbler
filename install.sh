@@ -68,9 +68,9 @@ log_ok()   { if [ "$QUIET_MODE" != "true" ]; then echo "[OK] $1"; fi; }
 
 # Utility functions
 check_root() {
-  if [ "$EUID" -ne 0 ]; then 
-    echo "Error: Please run as root (sudo)"
-    echo "Usage: sudo $0 [OPTIONS]"
+  if [ "$EUID" -ne 0 ]; then
+    echo "[ERROR] run as root (sudo)"
+    echo "usage: sudo $0 [OPTIONS]"
     exit 1
   fi
 }
@@ -79,145 +79,139 @@ execute_cmd() {
   local desc=$1; shift
   local cmd="$@"
   if [ "$QUIET_MODE" = "true" ]; then
-    if eval "$cmd" &> /dev/null; then return 0; else log_error "Failed to $desc"; fi
+    if eval "$cmd" &> /dev/null; then return 0; else log_error "$desc failed"; fi
   else
-    log_info "Executing: $desc"
-    if eval "$cmd"; then return 0; else log_error "Failed to $desc"; fi
+    log_info "$desc"
+    if eval "$cmd"; then return 0; else log_error "$desc failed"; fi
   fi
 }
 
 # Check system requirements
 check_system() {
-  log_info "Checking system requirements..."
-  
+  log_info "System check"
+
   # Check Python
   if ! command -v python3 &> /dev/null; then
-    log_error "python3 not found. Please install Python 3."
+    log_error "python3 not found"
   fi
-  
+
   # Check pip
   if ! command -v pip3 &> /dev/null; then
-    log_error "pip3 not found. Please install pip."
+    log_error "pip3 not found"
   fi
 
   # Check moOde configuration
   if [ -f "$BASE_DIR/src/settings.json" ]; then
     CURR_FILE=$(jq -r '.currentsong_file // empty' "$BASE_DIR/src/settings.json" 2>/dev/null || echo "")
     if [ -n "$CURR_FILE" ] && [ ! -f "$CURR_FILE" ]; then
-      log_info "Warning: Configured currentsong_file ($CURR_FILE) does not exist. Check moOde configuration."
+      log_info "Warn: currentsong_file not found: $CURR_FILE"
     fi
   fi
 
-  log_ok "System requirements OK"
+  log_ok "System ready"
 }
 
 # Setup Python environment
 setup_python_env() {
-  log_info "Setting up Python virtual environment..."
-  
+  log_info "Venv init"
+
   if [ -d "$BASE_DIR/$VENV_DIR" ]; then
-    log_info "Virtual environment already exists."
+    log_info "Venv exists, recreating"
     rm -rf "$BASE_DIR/$VENV_DIR"
   fi
-  
-  execute_cmd "create virtual environment" "$PYTHON_CMD -m venv $VENV_DIR"
-  
+
+  execute_cmd "Venv create" "$PYTHON_CMD -m venv $VENV_DIR"
+
   # Install requirements
   if [ -f "$BASE_DIR/$REQUIREMENTS_FILE" ]; then
-    log_info "Installing dependencies..."
-    execute_cmd "install requirements" "$BASE_DIR/$VENV_DIR/bin/pip install -r $REQUIREMENTS_FILE"
+    execute_cmd "Deps install" "$BASE_DIR/$VENV_DIR/bin/pip install -r $REQUIREMENTS_FILE"
   else
-    log_info "No requirements.txt found, skipping dependencies"
+    log_info "No requirements.txt, skip"
   fi
-  
-  log_ok "Python environment ready"
+
+  log_ok "Venv ready"
 }
 
 # Configure token and settings
 setup_configuration() {
-  log_info "Setting up configuration files..."
+  log_info "Config init"
 
   TARGET_USER=${SUDO_USER:-$DEFAULT_USER}
   if [ "$TARGET_USER" = "root" ]; then TARGET_USER=$DEFAULT_USER; fi
 
-  # settings.json is now committed to repository (without token)
-  # Just ensure correct permissions
+  # settings.json is committed to repository (without token)
   if [ -f "$SETTINGS_FILE" ]; then
     chown "$TARGET_USER:$TARGET_USER" "$SETTINGS_FILE"
     chmod 600 "$SETTINGS_FILE"
-    log_info "settings.json permissions configured"
+    log_info "settings.json: 600"
   else
-    log_error "settings.json not found in repository!"
+    log_error "settings.json not found"
   fi
 
   # Setup .env file
   if [ "$SKIP_TOKEN" = "true" ]; then
-    log_info "Skipping token configuration..."
+    log_info "Token skipped"
     return 0
   fi
 
   if [ -f "$ENV_FILE" ]; then
-    log_info ".env file already exists"
+    log_info ".env exists"
     echo ""
-    echo -n "Do you want to reconfigure your token? (y/N): "
+    echo -n "Reconfigure token? (y/N): "
     read -r RECONFIGURE
     if [[ ! "$RECONFIGURE" =~ ^[Yy]$ ]]; then
-      log_info "Keeping existing .env file"
+      log_info ".env kept"
       return 0
     fi
   fi
 
   # Prompt for token
   echo ""
-  echo "========================================================================="
-  echo " ListenBrainz Token Configuration"
-  echo "========================================================================="
+  echo "==========================================="
+  echo " ListenBrainz token setup"
+  echo "==========================================="
   echo ""
-  echo "To use this scrobbler, you need a ListenBrainz API token."
+  echo "Get your token at:"
+  echo "  https://listenbrainz.org/settings/"
   echo ""
-  echo "How to get your token:"
-  echo "  1. Visit: https://listenbrainz.org/settings/"
-  echo "  2. Log in or create an account"
-  echo "  3. Copy your 'User Token'"
+  echo "(log in, copy 'User Token')"
   echo ""
-  echo -n "Enter your ListenBrainz token: "
+  echo -n "Token: "
   read -r LB_TOKEN
   echo ""
 
   # Validate token (basic check)
   if [ -z "$LB_TOKEN" ]; then
-    log_error "Token cannot be empty!"
+    log_error "Empty token"
   fi
 
   if [ ${#LB_TOKEN} -lt 30 ]; then
-    echo "Warning: Token seems too short (expected ~36 characters)"
-    echo -n "Continue anyway? (y/N): "
+    echo "[WARN] Token too short (expected ~36 chars)"
+    echo -n "Continue? (y/N): "
     read -r CONTINUE
     if [[ ! "$CONTINUE" =~ ^[Yy]$ ]]; then
-      log_error "Installation cancelled"
+      log_error "Install cancelled"
     fi
   fi
 
   # Create .env file
-  log_info "Creating .env file..."
+  log_info ".env writing"
   cat > "$ENV_FILE" << EOF
-# ListenBrainz Configuration
-# Your ListenBrainz API token
-# Get it from: https://listenbrainz.org/settings/
+# ListenBrainz API token
+# Get from: https://listenbrainz.org/settings/
 LISTENBRAINZ_TOKEN=$LB_TOKEN
 EOF
 
-  # Secure the .env file
   chown "$TARGET_USER:$TARGET_USER" "$ENV_FILE"
   chmod 600 "$ENV_FILE"
 
-  log_ok "Token configured successfully"
+  log_ok "Token ready"
   echo ""
 }
 
 # Setup permissions
 setup_permissions() {
-  log_info "Setting up permissions..."
+  log_info "Perms init"
 
   TARGET_USER=${SUDO_USER:-$DEFAULT_USER}
   if [ "$TARGET_USER" = "root" ]; then TARGET_USER=$DEFAULT_USER; fi
@@ -251,35 +245,35 @@ setup_permissions() {
   chmod 755 "$BASE_DIR/src" "$CACHE_DIR" 2>/dev/null || true
   chown -R "$TARGET_USER:$TARGET_USER" "$CACHE_DIR" 2>/dev/null || true
 
-  log_ok "Permissions configured"
+  log_ok "Perms ready"
 }
 
 # Setup systemd service
 setup_service() {
   if [ "$SKIP_SERVICE" = "true" ]; then
-    log_info "Skipping systemd service setup..."
+    log_info "Service skipped"
     return 0
   fi
 
   if [ -f "$SERVICE_EXAMPLE" ]; then
-    log_info "Installing systemd service..."
+    log_info "Service install"
     TMP_SERVICE="$(mktemp)"
     sed "s|/home/pi/lbms|$BASE_DIR|g" "$SERVICE_EXAMPLE" > "$TMP_SERVICE"
-    
-    execute_cmd "install service file" "sudo cp '$TMP_SERVICE' '$SERVICE_FILE'"
-    execute_cmd "reload systemd daemon" "sudo systemctl daemon-reload"
-    execute_cmd "enable service" "sudo systemctl enable $SERVICE_NAME.service"
-    execute_cmd "start service" "sudo systemctl start $SERVICE_NAME.service"
-    
+
+    execute_cmd "Service copy" "sudo cp '$TMP_SERVICE' '$SERVICE_FILE'"
+    execute_cmd "Daemon reload" "sudo systemctl daemon-reload"
+    execute_cmd "Service enable" "sudo systemctl enable $SERVICE_NAME.service"
+    execute_cmd "Service start" "sudo systemctl start $SERVICE_NAME.service"
+
     rm -f "$TMP_SERVICE"
-    log_ok "Service installed and started"
+    log_ok "Service running"
   else
-    log_info "No service example found, skipping systemd setup"
+    log_info "No service example, skip"
   fi
 }
 
 # Main execution
-log_info "Starting installation of $PROJECT_NAME..."
+log_info "$PROJECT_NAME install"
 
 # Check system
 check_system
@@ -301,40 +295,38 @@ setup_service
 
 # Summary
 echo ""
-echo "==================================================================="
-echo " Installation Complete: $PROJECT_NAME"
-echo "==================================================================="
+echo "==========================================="
+echo " $PROJECT_NAME: install complete"
+echo "==========================================="
 echo ""
-echo " Installation Directory: $BASE_DIR"
-echo " Python Environment: $VENV_DIR"
-echo " Configuration: $SETTINGS_FILE"
-echo " Token stored in: $ENV_FILE (secure)"
+echo " dir:    $BASE_DIR"
+echo " venv:   $VENV_DIR"
+echo " config: $SETTINGS_FILE"
+echo " token:  $ENV_FILE (mode 600)"
 echo ""
 if [ "$SKIP_SERVICE" != "true" ] && [ -f "$SERVICE_FILE" ]; then
-  echo " Systemd Service: $SERVICE_NAME.service"
+  echo " service: $SERVICE_NAME.service"
   echo ""
-  echo " Service Commands:"
+  echo " commands:"
   echo "   sudo systemctl status $SERVICE_NAME"
   echo "   sudo systemctl restart $SERVICE_NAME"
   echo "   sudo systemctl stop $SERVICE_NAME"
   echo "   sudo journalctl -u $SERVICE_NAME -f"
   echo ""
 else
-  echo " Manual Execution:"
+  echo " run:"
   echo "   $BASE_DIR/$VENV_DIR/bin/python3 $BASE_DIR/src/main.py"
   echo ""
 fi
-echo " Configuration Files:"
-echo "   Edit settings: nano $SETTINGS_FILE"
-echo "   Change token: nano $ENV_FILE"
+echo " edit:"
+echo "   nano $SETTINGS_FILE"
+echo "   nano $ENV_FILE"
 echo ""
-echo " Documentation:"
-echo "   README: $BASE_DIR/README.md"
-echo "   .env Guide: $BASE_DIR/docs/ENV_GUIDE.md"
+echo " docs:  $BASE_DIR/README.md"
 echo ""
-echo "==================================================================="
-echo " Installation successful! The scrobbler is ready to use."
-echo "==================================================================="
+echo "==========================================="
+echo " Ready"
+echo "==========================================="
 echo ""
 
 exit 0

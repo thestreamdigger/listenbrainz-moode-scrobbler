@@ -41,14 +41,6 @@ class Logger:
             if (text, replacement) not in self._redactions:
                 self._redactions.append((text, replacement))
 
-    def _redact(self, message):
-        if not self._redactions:
-            return message
-        out = str(message)
-        for text, replacement in self._redactions:
-            out = out.replace(text, replacement)
-        return out
-
     def _log(self, level, message):
         if not self.enabled or self.LEVELS.get(level, 0) < self.LEVELS.get(self.level, 0):
             return
@@ -77,6 +69,3 @@ class Logger:
     def ok(self, message): self._log("OK", message)
     def warning(self, message): self._log("WARNING", message)
     def error(self, message): self._log("ERROR", message)
-
-    def print(self, message):
-        print(message)

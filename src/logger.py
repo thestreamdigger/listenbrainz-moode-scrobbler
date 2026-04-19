@@ -7,7 +7,7 @@ from threading import Lock
 
 
 class Logger:
-    """Thread-safe logger with custom levels (WAIT, OK) beyond standard logging."""
+    """Thread-safe logger with custom levels (WAIT, OK) and redaction support."""
 
     LEVELS = {
         "DEBUG": logging.DEBUG,
@@ -25,6 +25,7 @@ class Logger:
         self.format = "[{level}] {message}"
         self.timestamp = False
         self._lock = Lock()
+        self._redactions = []
 
         if settings and 'logging' in settings:
             logging_settings = settings.get('logging', {})
@@ -33,18 +34,37 @@ class Logger:
             self.format = logging_settings.get('format', '[{level}] {message}')
             self.timestamp = logging_settings.get('timestamp', False)
 
+    def add_redaction(self, text, replacement="****"):
+        if not text:
+            return
+        with self._lock:
+            if (text, replacement) not in self._redactions:
+                self._redactions.append((text, replacement))
+
+    def _redact(self, message):
+        if not self._redactions:
+            return message
+        out = str(message)
+        for text, replacement in self._redactions:
+            out = out.replace(text, replacement)
+        return out
+
     def _log(self, level, message):
         if not self.enabled or self.LEVELS.get(level, 0) < self.LEVELS.get(self.level, 0):
             return
 
         with self._lock:
             try:
+                safe_message = message
+                for text, replacement in self._redactions:
+                    safe_message = str(safe_message).replace(text, replacement)
+
                 parts = []
 
                 if self.timestamp:
                     parts.append(datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
 
-                output = self.format.format(level=level, message=message)
+                output = self.format.format(level=level, message=safe_message)
                 parts.append(output)
 
                 print(" ".join(parts), flush=True)

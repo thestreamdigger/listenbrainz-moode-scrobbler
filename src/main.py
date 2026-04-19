@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# ListenBrainz moOde Scrobbler v1.1.0
+# ListenBrainz moOde Scrobbler v1.2.0
 # Copyright (C) 2025 StreamDigger
 #
 # This program is free software: you can redistribute it and/or modify
@@ -17,7 +17,8 @@ import tempfile
 import time
 from collections import deque
 from html import unescape
-from threading import Lock, Thread, Timer
+from pathlib import Path
+from threading import Event, Lock, Thread, Timer
 
 # Third-party
 from dotenv import load_dotenv
@@ -74,7 +75,13 @@ class ListenCache:
                     else:
                         self._save_unlocked()
             except Exception as e:
-                self.log.error(f"Error handling cache file: {e}")
+                self.log.error(f"Cache file corrupted: {e}")
+                try:
+                    backup = f"{self.cache_file}.corrupt.{int(time.time())}"
+                    os.rename(self.cache_file, backup)
+                    self.log.warning(f"Corrupted cache backed up to: {backup}")
+                except Exception as backup_err:
+                    self.log.error(f"Failed to back up corrupted cache: {backup_err}")
                 self._save_unlocked()
 
     def _save_unlocked(self):
@@ -94,7 +101,16 @@ class ListenCache:
             try:
                 with os.fdopen(temp_fd, 'w') as tmp_f:
                     json.dump(list(self.pending_listens), tmp_f)
+                    tmp_f.flush()
+                    os.fsync(tmp_f.fileno())
                 os.replace(temp_path, self.cache_file)
+
+                if cache_dir:
+                    dir_fd = os.open(cache_dir, os.O_RDONLY)
+                    try:
+                        os.fsync(dir_fd)
+                    finally:
+                        os.close(dir_fd)
             finally:
                 if os.path.exists(temp_path):
                     try:
@@ -136,14 +152,15 @@ class ListenCache:
                 while self.pending_listens:
                     to_process.append(self.pending_listens.popleft())
 
-            for listen_dict in to_process:
+            for idx, listen_dict in enumerate(to_process):
                 try:
                     listen = Listen(**listen_dict)
                     client.submit_single_listen(listen)
                     self._schedule_save()
                 except Exception:
                     with self._lock:
-                        self.pending_listens.appendleft(listen_dict)
+                        for remaining in reversed(to_process[idx:]):
+                            self.pending_listens.appendleft(remaining)
                     self._schedule_save()
                     return False
             return True
@@ -186,7 +203,11 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
     def __init__(self):
         print_banner()
 
-        load_dotenv()
+        env_path = Path(__file__).resolve().parent.parent / '.env'
+        if env_path.exists():
+            load_dotenv(dotenv_path=env_path)
+        else:
+            load_dotenv()
 
         self.settings = self._load_settings()
         self.log = Logger(self.settings)
@@ -198,6 +219,8 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
         if not self._token:
             self.log.error("LISTENBRAINZ_TOKEN not found in environment or settings.json")
             raise ValueError("LISTENBRAINZ_TOKEN not found in environment or settings.json")
+
+        self.log.add_redaction(self._token)
 
         self.current_song = None
         self.play_start_time = None
@@ -211,6 +234,7 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
 
         self._currentsong_realpath = os.path.realpath(self.settings['currentsong_file'])
         self.listen_cache = None
+        self._shutdown_event = Event()
         self._preprocess_filters()
 
     def _preprocess_filters(self):
@@ -224,10 +248,6 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
             else:
                 self._ignore_patterns[field] = [p.lower() for p in patterns]
 
-    def _safe_log_error(self, message):
-        safe_msg = message.replace(self._token, "****")
-        self.log.error(safe_msg)
-
     def initialize(self):
         self.log.wait("Validating ListenBrainz token...")
         try:
@@ -235,7 +255,7 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
             self.client.set_auth_token(self._token)
             self.log.ok("Token validated successfully")
         except Exception as e:
-            self._safe_log_error(f"Token validation failed - {e}")
+            self.log.error(f"Token validation failed - {e}")
             return False
 
         if self.settings['features']['enable_cache']:
@@ -249,8 +269,7 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
         return True
 
     def _check_connection_periodically(self):
-        while True:
-            time.sleep(CONNECTION_CHECK_INTERVAL)
+        while not self._shutdown_event.wait(CONNECTION_CHECK_INTERVAL):
             self.check_connection_and_process_cache()
 
     def check_connection_and_process_cache(self):
@@ -331,7 +350,7 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
             self.log.info(f"Listening now... {song_info['title']} by {song_info['artist']}")
             return True
         except Exception as e:
-            self._safe_log_error(f"Failed to submit Listening now...: {e}")
+            self.log.error(f"Failed to submit Listening now...: {e}")
             return False
 
     def submit_listen(self, song_info, play_start_time):
@@ -345,27 +364,33 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
             return
 
         tracknumber = self._extract_tracknumber(song_info)
+        listened_at = int(time.time())
 
         listen = Listen(
             track_name=song_info['title'],
             artist_name=song_info['artist'],
             release_name=song_info.get('album', ''),
-            listened_at=int(time.time()),
+            listened_at=listened_at,
             listening_from=LISTENING_FROM,
             tracknumber=tracknumber
         )
 
         for attempt in range(self.retry_count):
+            if self._shutdown_event.is_set():
+                self.log.warning("Shutdown in progress, aborting retries")
+                break
             try:
                 self.client.submit_single_listen(listen)
                 self.log.info(f"Successfully submitted: {song_info['title']} by {song_info['artist']}")
                 return
             except Exception as e:
                 self.log.error(f"Submission failed for '{song_info['title']}' by '{song_info['artist']}'")
-                self._safe_log_error(f"Attempt {attempt + 1}/{self.retry_count} - Error: {e}")
+                self.log.error(f"Attempt {attempt + 1}/{self.retry_count} - Error: {e}")
                 if attempt < self.retry_count - 1:
                     self.log.wait(f"Retrying in {self.retry_delay} seconds...")
-                    time.sleep(self.retry_delay)
+                    if self._shutdown_event.wait(self.retry_delay):
+                        self.log.warning("Shutdown in progress, aborting retries")
+                        break
                 else:
                     self.log.error("All retry attempts exhausted")
 
@@ -375,7 +400,7 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
                 'track_name': song_info.get('title', ''),
                 'artist_name': song_info.get('artist', ''),
                 'release_name': song_info.get('album', ''),
-                'listened_at': int(time.time()),
+                'listened_at': listened_at,
                 'listening_from': LISTENING_FROM,
                 'tracknumber': tracknumber
             })
@@ -419,7 +444,12 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
 
     def _delayed_submit(self, song_info, play_start_time):
         self.log.debug(f"Delayed submit started for: {song_info.get('title')}")
-        time.sleep(self.min_play_time)
+        if self._shutdown_event.wait(self.min_play_time):
+            self.log.debug(f"Shutdown during delay, skipping submit: {song_info.get('title')}")
+            return
+        if self.play_start_time != play_start_time or not self._same_track(song_info, self.current_song):
+            self.log.debug(f"Track changed before min_play_time, skipping: {song_info.get('title')}")
+            return
         self.submit_listen(song_info, play_start_time)
 
     def _handle_file_change(self, event_type):
@@ -436,6 +466,11 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
     def on_created(self, event):
         if os.path.realpath(event.src_path) == self._currentsong_realpath:
             self._handle_file_change("created")
+
+    def on_moved(self, event):
+        dest = getattr(event, 'dest_path', None)
+        if dest and os.path.realpath(dest) == self._currentsong_realpath:
+            self._handle_file_change("moved")
 
     def _load_settings(self):
         settings_path = os.path.join(os.path.dirname(__file__), 'settings.json')
@@ -465,6 +500,7 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
         return False
 
     def cleanup(self):
+        self._shutdown_event.set()
         if self.listen_cache:
             self.listen_cache.save_cache()
 
@@ -476,7 +512,6 @@ def main():
     def signal_handler(signum, frame):
         if scrobbler:
             scrobbler.log.info(f"Received signal {signum}, shutting down gracefully...")
-            scrobbler.cleanup()
         sys.exit(0)
 
     signal.signal(signal.SIGTERM, signal_handler)

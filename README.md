@@ -18,7 +18,9 @@ Supported sources: MPD (local files, internet radio, UPnP via upmpdcli). Airplay
 ## Features
 
 - Real-time "listening now" status
-- Canonical scrobble rule: `min(50%, 240s)`, floor at `min_play_time`
+- Canonical scrobble rule: `min(duration * 50%, 240s)`, with 240s
+  fallback when duration is missing (stream-like). `min_play_time`
+  is a floor in both branches.
 - ListenBrainz metadata: `duration_ms`, `release_mbid`, `tracknumber`,
   `submission_client`, `media_player` (per MetaBrainz recommendations)
 - Offline cache with automatic retry and batch submission
@@ -144,7 +146,7 @@ Committed to repo (no token). Edit to configure scrobbler behavior:
 | Option | Description | Default |
 |--------|-------------|---------|
 | `currentsong_file` | Path to moOde's current song file | `/var/local/www/currentsong.txt` |
-| `min_play_time` | Minimum seconds before scrobbling | `30` |
+| `min_play_time` | Floor (seconds) under the canonical rule | `30` |
 | `cache_file` | File to store pending scrobbles | `pending_listens.json` |
 | `enable_listening_now` | Send "now playing" updates | `true` |
 | `enable_listen` | Enable scrobbling | `true` |

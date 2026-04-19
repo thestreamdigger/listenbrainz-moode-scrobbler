@@ -1,6 +1,6 @@
 # ListenBrainz moOde Scrobbler
 
-[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](https://github.com/thestreamdigger/listenbrainz-moode-scrobbler)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://github.com/thestreamdigger/listenbrainz-moode-scrobbler)
 [![License](https://img.shields.io/badge/license-GPL%20v3-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/)
 [![Status](https://img.shields.io/badge/status-stable-brightgreen.svg)]()
@@ -18,9 +18,9 @@ Supported sources: MPD (local files, internet radio, UPnP via upmpdcli). Airplay
 ## Features
 
 - Real-time "listening now" status
-- Canonical scrobble rule: `min(duration * 50%, 240s)`, with 240s
-  fallback when duration is missing (stream-like). `min_play_time`
-  is a floor in both branches.
+- Canonical scrobble rule: `min(duration * 50%, 240s)`, floor at
+  `min_play_time`. Falls back to `min_play_time` when duration is
+  absent from `currentsong.txt` (streams filtered via patterns).
 - ListenBrainz metadata: `duration_ms`, `release_mbid`, `tracknumber`,
   `submission_client`, `media_player` (per MetaBrainz recommendations)
 - Offline cache with automatic retry and batch submission

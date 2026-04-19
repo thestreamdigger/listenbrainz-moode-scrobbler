@@ -3,39 +3,29 @@
 All notable changes to this project will be documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [1.3.0] - 2026-04-18
+## [1.2.0] - 2026-04-18
 ### Added
-- Canonical scrobble rule: submit when elapsed >= min(duration * 0.5, 240s).
-  Falls back to 240s when duration is missing (stream-like). min_play_time
-  remains as a floor in both branches.
-- submission_client / submission_client_version / media_player in
-  additional_info (MetaBrainz recommendation)
-- duration_ms forwarded from moOde currentsong.txt
-- release_mbid forwarded from musicbrainz_albumid (when present)
-- --dry-run flag: runs pipeline without submitting, logs intended payload
+- Canonical scrobble rule: min(duration * 0.5, 240s), floor at min_play_time
+- submission_client, submission_client_version, media_player in additional_info
+- duration_ms forwarded when present
+- release_mbid forwarded from musicbrainz_albumid when present
+- on_moved handler for atomic rename writes to currentsong.txt
+- Token redaction in logger across all log levels
+- --dry-run flag
 - --version flag
 
 ### Changed
-- Dropped deprecated listening_from field in favor of submission_client
-  and media_player
-- Cached listens now use the same payload shape as live submissions
-
-## [1.2.0] - 2026-04-18
-### Added
-- on_moved handler for atomic rename writes to currentsong.txt
-- Token redaction in logger applied across all log levels
-
-### Changed
-- Log style aligned with project convention (terse, colon for values, err suffix)
+- Log style aligned (terse, colon for values, err suffix)
 - load_dotenv uses explicit path relative to file location
 - _delayed_submit validates current track + play_start before submitting
 - submit_listen aborts retry loop on shutdown and falls back to cache
 - Connection check thread uses Event.wait for interruptible shutdown
+- Cached listens use the same payload shape as live submissions
 
 ### Fixed
 - Data loss in process_pending_listens small_queue: items after first
   failure were drained but not re-enqueued
-- Durability gap on atomic cache write (now fsyncs file + parent dir)
+- Durability gap on atomic cache write (fsync on file and parent dir)
 - Corrupted cache no longer silently destroyed (backed up as .corrupt.<ts>)
 
 ## [1.1.0] - 2026-02-07

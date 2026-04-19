@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# ListenBrainz moOde Scrobbler v1.3.0
+# ListenBrainz moOde Scrobbler v1.2.0
 # Copyright (C) 2025 StreamDigger
 #
 # This program is free software: you can redistribute it and/or modify
@@ -352,13 +352,13 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
 
     def _canonical_delay(self, song_info):
         """Scrobble delay: min(duration * 0.5, 240s), floor at min_play_time.
-        Without duration (streams): 240s (canonical ceiling)."""
+        Without duration, fall back to min_play_time (moOde does not always
+        emit duration=; streams are handled via ignore_patterns)."""
         duration_ms = self._extract_duration_ms(song_info)
         if duration_ms:
             canonical = min(int(duration_ms / 1000 * CANONICAL_HALF), CANONICAL_MAX_DELAY)
-        else:
-            canonical = CANONICAL_MAX_DELAY
-        return max(canonical, self.min_play_time)
+            return max(canonical, self.min_play_time)
+        return self.min_play_time
 
     def _build_additional_info(self, song_info):
         info = {

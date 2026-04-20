@@ -1,14 +1,10 @@
 #!/usr/bin/env python3
-"""Thread-safe logger with configurable levels, format, and timestamp support."""
-
 import logging
 from datetime import datetime
 from threading import Lock
 
 
 class Logger:
-    """Thread-safe logger with custom levels (WAIT, OK) and redaction support."""
-
     LEVELS = {
         "DEBUG": logging.DEBUG,
         "INFO": logging.INFO,

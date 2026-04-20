@@ -8,7 +8,6 @@
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 
-# Standard library
 import argparse
 import json
 import os
@@ -21,17 +20,14 @@ from html import unescape
 from pathlib import Path
 from threading import Event, Lock, Thread, Timer
 
-# Third-party
 from dotenv import load_dotenv
 from liblistenbrainz import Listen, ListenBrainz
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
-# Local
 from __version__ import __version__
 from logger import Logger
 
-# Constants
 MAX_CACHE_SIZE = 1000
 SMALL_QUEUE_THRESHOLD = 3
 BATCH_SIZE = 10
@@ -56,8 +52,6 @@ def print_banner():
 
 
 class ListenCache:
-    """Manages cached listen submissions with atomic file operations and thread-safe locking."""
-
     def __init__(self, cache_file, logger):
         self.cache_file = cache_file
         self.pending_listens = deque(maxlen=MAX_CACHE_SIZE)
@@ -203,8 +197,6 @@ class ListenCache:
 
 
 class ListenBrainzScrobbler(FileSystemEventHandler):
-    """Monitors moOde currentsong.txt and submits listens to ListenBrainz with caching support."""
-
     def __init__(self, dry_run=False):
         print_banner()
 
@@ -218,7 +210,6 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
 
         self.settings = self._load_settings()
         self.log = Logger(self.settings)
-        self.log.debug("Settings loaded")
         self.client = None
 
         self._token = os.getenv('LISTENBRAINZ_TOKEN') or self.settings.get('listenbrainz_token')
@@ -320,11 +311,6 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
                 song_info['state'] = song_info['state'].lower()
 
             if not song_info['title'] or not song_info['artist']:
-                file_field = song_info.get('file') or ''
-                if file_field.endswith('Active'):
-                    self.log.debug(f"Non-MPD: {file_field}")
-                else:
-                    self.log.debug("Missing title/artist")
                 return None
 
             return song_info
@@ -457,8 +443,6 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
         if self._should_ignore(song_info):
             return
 
-        self.log.debug(f"State: {song_info.get('state', 'unknown')}")
-
         if song_info.get("state") != "play":
             if self.current_song:
                 self.log.info(f"Stopped: {self.current_song.get('title')}")
@@ -481,18 +465,14 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
                 Thread(target=self._delayed_submit, args=(song_info, play_start, delay), daemon=True).start()
 
     def _delayed_submit(self, song_info, play_start_time, delay):
-        self.log.debug(f"Delayed submit: {song_info.get('title')} ({delay}s)")
         if self._shutdown_event.wait(delay):
-            self.log.debug(f"Shutdown during delay: {song_info.get('title')}")
             return
         if self.play_start_time != play_start_time or not self._same_track(song_info, self.current_song):
-            self.log.debug(f"Track changed early: {song_info.get('title')}")
             return
         self.submit_listen(song_info, play_start_time)
 
     def _handle_file_change(self, event_type):
         try:
-            self.log.debug(f"File {event_type}")
             self.handle_song_update(self.parse_currentsong())
         except Exception as e:
             self.log.debug(f"File {event_type} err: {e}")
@@ -532,7 +512,6 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
 
         for field, patterns in self._ignore_patterns.items():
             if match_patterns(song_info.get(field, ''), patterns):
-                self.log.debug(f"Ignored ({field}): {song_info.get('title')}")
                 return True
 
         return False

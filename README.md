@@ -1,8 +1,8 @@
 # ListenBrainz moOde Scrobbler
 
-[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://github.com/thestreamdigger/listenbrainz-moode-scrobbler)
+[![Version](https://img.shields.io/badge/version-1.2.1-blue.svg)](https://github.com/thestreamdigger/listenbrainz-moode-scrobbler)
 [![License](https://img.shields.io/badge/license-GPL%20v3-green.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![Status](https://img.shields.io/badge/status-stable-brightgreen.svg)]()
 [![Raspberry Pi](https://img.shields.io/badge/platform-Raspberry%20Pi-C51A4A.svg)](https://www.raspberrypi.org/)
 [![moOde](https://img.shields.io/badge/works%20with-moOde%20audio-orange.svg)](https://moodeaudio.org/)
@@ -21,8 +21,9 @@ Supported sources: MPD (local files, internet radio, UPnP via upmpdcli). Airplay
 - Canonical scrobble rule: `min(duration * 50%, 240s)`, floor at
   `min_play_time`. Falls back to `min_play_time` when duration is
   absent from `currentsong.txt` (streams filtered via patterns).
-- ListenBrainz metadata: `duration_ms`, `release_mbid`, `tracknumber`,
-  `submission_client`, `media_player` (per MetaBrainz recommendations)
+- ListenBrainz metadata: `tracknumber`, `submission_client`, `media_player`
+  always; `duration_ms` and `release_mbid` only when moOde provides them in
+  `currentsong.txt` (per MetaBrainz recommendations)
 - Offline cache with automatic retry and batch submission
 - Metadata parsing from moOde `currentsong.txt`
 - `.env` token storage with automatic redaction in logs
@@ -33,7 +34,7 @@ Supported sources: MPD (local files, internet radio, UPnP via upmpdcli). Airplay
 ## Requirements
 
 - Raspberry Pi running [moOde audio player](https://moodeaudio.org/)
-- Python 3.8 or higher
+- Python 3.10 or higher
 - [ListenBrainz](https://listenbrainz.org/) account and API token
 
 ## Quick Installation

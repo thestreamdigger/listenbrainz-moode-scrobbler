@@ -1,11 +1,11 @@
 # lbms
 
-ListenBrainz moOde Scrobbler v1.1.0.
+ListenBrainz moOde Scrobbler v1.2.1.
 Tracks played music from moOde audio player to ListenBrainz.
 
 ## Target
 
-Raspberry Pi (Linux), Python 3.8+, moOde.
+Raspberry Pi (Linux), Python 3.10+, moOde.
 
 ## Features
 

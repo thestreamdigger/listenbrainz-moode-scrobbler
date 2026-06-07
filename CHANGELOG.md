@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.2.1] - 2026-06-05
+### Changed
+- Dependencies updated: liblistenbrainz 0.6.1 -> 0.7.0, python-dotenv 1.0.1 -> 1.2.2 (watchdog stays 6.0.0)
+- Minimum Python raised to 3.10 (python-dotenv 1.2.2 requirement)
+- systemd unit waits for network-online.target (avoids failed start before connectivity)
+- README clarifies duration_ms/release_mbid are sent only when present in currentsong.txt
+
+### Removed
+- Dead 'genre' field from currentsong parser (parsed but never used; moOde does not emit it)
+
 ## [1.2.0] - 2026-04-18
 ### Added
 - Canonical scrobble rule: min(duration * 0.5, 240s), floor at min_play_time

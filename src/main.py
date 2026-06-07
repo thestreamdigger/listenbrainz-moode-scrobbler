@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# ListenBrainz moOde Scrobbler v1.2.0
+# ListenBrainz moOde Scrobbler v1.2.1
 # Copyright (C) 2025 StreamDigger
 #
 # This program is free software: you can redistribute it and/or modify
@@ -41,7 +41,7 @@ MEDIA_PLAYER = 'MPD'
 
 SONG_FIELDS = {
     'file', 'title', 'artist', 'album', 'state', 'track', 'date',
-    'composer', 'genre', 'duration', 'bitrate', 'encoded',
+    'composer', 'duration', 'bitrate', 'encoded',
     'musicbrainz_albumid'
 }
 SONG_IDENTITY_FIELDS = ('title', 'artist', 'album')

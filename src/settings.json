@@ -21,8 +21,8 @@
     },
     "logging": {
         "enable": true,
-        "level": "DEBUG",
+        "level": "INFO",
         "format": "[{level}] {message}",
         "timestamp": true
     }
-} 
+}

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# ListenBrainz moOde Scrobbler v1.2.1
+# ListenBrainz moOde Scrobbler
 # Copyright (C) 2025 StreamDigger
 #
 # This program is free software: you can redistribute it and/or modify
@@ -154,6 +154,11 @@ class ListenCache:
             for idx, listen_dict in enumerate(to_process):
                 try:
                     listen = Listen(**listen_dict)
+                except Exception as e:
+                    self.log.error(f"Invalid listen dropped: {e}")
+                    self._schedule_save()
+                    continue
+                try:
                     client.submit_single_listen(listen)
                     self._schedule_save()
                 except Exception:
@@ -222,6 +227,7 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
 
         self.current_song = None
         self.play_start_time = None
+        self.scrobbled = False
         self.retry_count = self.settings['retry']['count']
         self.retry_delay = self.settings['retry']['delay']
 
@@ -397,7 +403,7 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
         if not self.settings['features']['enable_listen']:
             return
 
-        listened_at = int(time.time())
+        listened_at = int(play_start_time)
         listen_dict = self._build_listen_dict(song_info, listened_at)
 
         if self.dry_run:
@@ -443,32 +449,52 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
         if self._should_ignore(song_info):
             return
 
-        if song_info.get("state") != "play":
-            if self.current_song:
+        state = song_info.get("state")
+        if state != "play":
+            if not self.current_song:
+                return
+            if state == "pause":
+                if self.play_start_time is not None:
+                    self.log.info(f"Paused: {self.current_song.get('title')}")
+                    self.play_start_time = None
+            else:
                 self.log.info(f"Stopped: {self.current_song.get('title')}")
                 self.current_song = None
                 self.play_start_time = None
+                self.scrobbled = False
             return
 
-        if not self._same_track(song_info, self.current_song):
-            if self.settings['features']['enable_listening_now']:
-                self.submit_playing_now(song_info)
-            else:
-                self.log.info(f"Track: {song_info.get('title')} - {song_info.get('artist')}")
+        if self._same_track(song_info, self.current_song):
+            if self.play_start_time is None:
+                self.log.info(f"Resumed: {song_info.get('title')}")
+                self.play_start_time = time.time()
+                if not self.scrobbled:
+                    self._start_listen_timer(song_info)
+            return
 
-            self.current_song = song_info
-            self.play_start_time = time.time()
+        if self.settings['features']['enable_listening_now']:
+            self.submit_playing_now(song_info)
+        else:
+            self.log.info(f"Track: {song_info.get('title')} - {song_info.get('artist')}")
 
-            if self.settings['features']['enable_listen']:
-                play_start = self.play_start_time
-                delay = self._canonical_delay(song_info)
-                Thread(target=self._delayed_submit, args=(song_info, play_start, delay), daemon=True).start()
+        self.current_song = song_info
+        self.play_start_time = time.time()
+        self.scrobbled = False
+        self._start_listen_timer(song_info)
+
+    def _start_listen_timer(self, song_info):
+        if not self.settings['features']['enable_listen']:
+            return
+        play_start = self.play_start_time
+        delay = self._canonical_delay(song_info)
+        Thread(target=self._delayed_submit, args=(song_info, play_start, delay), daemon=True).start()
 
     def _delayed_submit(self, song_info, play_start_time, delay):
         if self._shutdown_event.wait(delay):
             return
         if self.play_start_time != play_start_time or not self._same_track(song_info, self.current_song):
             return
+        self.scrobbled = True
         self.submit_listen(song_info, play_start_time)
 
     def _handle_file_change(self, event_type):

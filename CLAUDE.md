@@ -1,6 +1,6 @@
 # lbms
 
-ListenBrainz moOde Scrobbler v1.2.1.
+ListenBrainz moOde Scrobbler (version: `src/__version__.py`).
 Tracks played music from moOde audio player to ListenBrainz.
 
 ## Target

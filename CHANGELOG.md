@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.2.2] - 2026-06-09
+### Fixed
+- Duplicate scrobble on pause/resume: pause no longer discards track state;
+  resume re-arms the listen timer only if the play session has not scrobbled yet
+- listened_at now reports play start time instead of submission time
+  (was shifted by up to 240s on long tracks)
+- Invalid cached listen no longer wedges small-queue processing forever
+  (dropped with log, matching batch path behavior)
+
+### Changed
+- install.sh token prompt no longer echoes token to terminal (read -s)
+- settings.json repo default log level reverted to INFO (was DEBUG)
+- Version string removed from main.py header comment (single source: __version__.py)
+
 ## [1.2.1] - 2026-06-05
 ### Changed
 - Dependencies updated: liblistenbrainz 0.6.1 -> 0.7.0, python-dotenv 1.0.1 -> 1.2.2 (watchdog stays 6.0.0)

@@ -177,7 +177,8 @@ setup_configuration() {
   echo "(log in, copy 'User Token')"
   echo ""
   echo -n "Token: "
-  read -r LB_TOKEN
+  read -rs LB_TOKEN
+  echo ""
   echo ""
 
   # Validate token (basic check)

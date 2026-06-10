@@ -1,6 +1,6 @@
 # ListenBrainz moOde Scrobbler
 
-[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](https://github.com/thestreamdigger/listenbrainz-moode-scrobbler)
+[![Version](https://img.shields.io/badge/version-1.3.1-blue.svg)](https://github.com/thestreamdigger/listenbrainz-moode-scrobbler)
 [![License](https://img.shields.io/badge/license-GPL%20v3-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![Status](https://img.shields.io/badge/status-stable-brightgreen.svg)]()
@@ -21,7 +21,7 @@ Known limitation: repeating the same track without a state transition (repeat-1)
 
 ## Features
 
-- Real-time "listening now" status
+- Real-time "Listening now" status
 - Canonical scrobble rule: `min(duration * 50%, 240s)`, floor at
   `min_play_time`. Falls back to `min_play_time` when duration is
   absent from `currentsong.txt` (streams filtered via patterns).
@@ -153,7 +153,7 @@ Committed to repo (no token). Edit to configure scrobbler behavior:
 | `currentsong_file` | Path to moOde's current song file | `/var/local/www/currentsong.txt` |
 | `min_play_time` | Floor (seconds) under the canonical rule | `30` |
 | `cache_file` | File to store pending scrobbles | `pending_listens.json` |
-| `enable_listening_now` | Send "now playing" updates | `true` |
+| `enable_listening_now` | Send "Listening now" updates | `true` |
 | `enable_listen` | Enable scrobbling | `true` |
 | `enable_cache` | Cache failed submissions | `true` |
 | `ignore_patterns` | Patterns to skip (artist/album/title) | `[]` |

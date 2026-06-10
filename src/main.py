@@ -403,14 +403,14 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
         try:
             listen_dict = self._build_listen_dict(song_info)
             if self.dry_run:
-                self.log.info(f"[DRY] Now playing: {song_info['title']} - {song_info['artist']}")
+                self.log.info(f"[DRY] Listening now: {song_info['title']} - {song_info['artist']}")
                 self.log.debug(f"[DRY] payload: {listen_dict}")
                 return True
             self.client.submit_playing_now(Listen(**listen_dict))
-            self.log.info(f"Now playing: {song_info['title']} - {song_info['artist']}")
+            self.log.info(f"Listening now: {song_info['title']} - {song_info['artist']}")
             return True
         except Exception as e:
-            self.log.error(f"Now playing err: {e}")
+            self.log.error(f"Listening now err: {e}")
             return False
 
     def submit_listen(self, song_info, play_start_time):

@@ -9,7 +9,7 @@ Raspberry Pi (Linux), Python 3.10+, moOde.
 
 ## Features
 
-- Real-time "listening now" status updates
+- Real-time "Listening now" status updates
 - Automatic scrobbling with configurable minimum play time (30s default)
 - Offline cache with automatic retry
 - Pattern filtering (ignore radio streams, unknown artists)

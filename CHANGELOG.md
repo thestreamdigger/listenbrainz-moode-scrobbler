@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.3.0] - 2026-06-09
+### Added
+- AirPlay and Spotify Connect scrobbling: moOde 10.2+ writes renderer
+  artist/album/title to currentsong.txt (file=AirPlay Active / Spotify
+  Active, no state line); these are now treated as playing
+- media_player reflects source (AirPlay / Spotify / MPD); music_service
+  set to spotify.com for Spotify listens
+
+### Compatibility
+- Renderer sessions carry no state or duration: pause is not detectable
+  (min_play_time timer keeps running) and listens use the min_play_time
+  fallback delay
+- moOde post-10.2.2 (upstream 1b6812b8) adds duration= to the MPD branch
+  of currentsong.txt — the canonical rule min(duration*0.5, 240s) becomes
+  fully active with that release, no lbms change needed
+
 ## [1.2.2] - 2026-06-09
 ### Fixed
 - Duplicate scrobble on pause/resume: pause no longer discards track state;

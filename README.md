@@ -1,6 +1,6 @@
 # ListenBrainz moOde Scrobbler
 
-[![Version](https://img.shields.io/badge/version-1.2.2-blue.svg)](https://github.com/thestreamdigger/listenbrainz-moode-scrobbler)
+[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](https://github.com/thestreamdigger/listenbrainz-moode-scrobbler)
 [![License](https://img.shields.io/badge/license-GPL%20v3-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![Status](https://img.shields.io/badge/status-stable-brightgreen.svg)]()
@@ -13,7 +13,9 @@ Python scrobbler for moOde audio player (Raspberry Pi) to ListenBrainz. Watches 
 
 Hobby project. Monitors tracks played via moOde, submits to ListenBrainz.
 
-Supported sources: MPD (local files, internet radio, UPnP via upmpdcli). Airplay, Spotify Connect and Bluetooth are out of scope — moOde writes only a renderer stub to `currentsong.txt` for those.
+Supported sources: MPD (local files, internet radio, UPnP via upmpdcli), plus AirPlay and Spotify Connect on moOde 10.2+ (renderer metadata in `currentsong.txt`). Bluetooth, Squeezelite, RoonBridge and Deezer are out of scope — moOde writes only a renderer marker without track metadata for those.
+
+Renderer caveats (AirPlay/Spotify): `currentsong.txt` carries no play state or duration for renderers, so pause is not detectable (the `min_play_time` timer keeps running) and the scrobble delay is always the `min_play_time` fallback.
 
 Known limitation: repeating the same track without a state transition (repeat-1) produces a single listen — track identity is title/artist/album and MPD does not signal the boundary in `currentsong.txt`.
 

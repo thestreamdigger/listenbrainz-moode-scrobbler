@@ -45,6 +45,11 @@ SONG_FIELDS = {
     'musicbrainz_albumid'
 }
 SONG_IDENTITY_FIELDS = ('title', 'artist', 'album')
+RENDERER_SOURCES = {
+    'AirPlay Active': 'AirPlay',
+    'Spotify Active': 'Spotify',
+}
+MUSIC_SERVICES = {'Spotify': 'spotify.com'}
 
 
 def print_banner():
@@ -315,6 +320,11 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
 
             if song_info['state']:
                 song_info['state'] = song_info['state'].lower()
+            else:
+                renderer = RENDERER_SOURCES.get(song_info.get('file') or '')
+                if renderer:
+                    song_info['state'] = 'play'
+                    song_info['source'] = renderer
 
             if not song_info['title'] or not song_info['artist']:
                 return None
@@ -353,11 +363,15 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
         return self.min_play_time
 
     def _build_additional_info(self, song_info):
+        source = song_info.get('source')
         info = {
-            'media_player': MEDIA_PLAYER,
+            'media_player': source or MEDIA_PLAYER,
             'submission_client': SUBMISSION_CLIENT,
             'submission_client_version': __version__,
         }
+        service = MUSIC_SERVICES.get(source)
+        if service:
+            info['music_service'] = service
         tracknumber = self._extract_tracknumber(song_info)
         if tracknumber is not None:
             info['tracknumber'] = tracknumber

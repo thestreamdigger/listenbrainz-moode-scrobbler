@@ -258,8 +258,14 @@ setup_service() {
 
   if [ -f "$SERVICE_EXAMPLE" ]; then
     log_info "Service install"
+    TARGET_USER=${SUDO_USER:-$DEFAULT_USER}
+    if [ "$TARGET_USER" = "root" ]; then TARGET_USER=$DEFAULT_USER; fi
     TMP_SERVICE="$(mktemp)"
-    sed "s|/home/pi/lbms|$BASE_DIR|g" "$SERVICE_EXAMPLE" > "$TMP_SERVICE"
+    sed -e "s|\r$||" \
+        -e "s|/home/pi/lbms|$BASE_DIR|g" \
+        -e "s|^User=pi$|User=$TARGET_USER|" \
+        -e "s|^Group=pi$|Group=$TARGET_USER|" \
+        "$SERVICE_EXAMPLE" > "$TMP_SERVICE"
 
     execute_cmd "Service copy" "sudo cp '$TMP_SERVICE' '$SERVICE_FILE'"
     execute_cmd "Daemon reload" "sudo systemctl daemon-reload"

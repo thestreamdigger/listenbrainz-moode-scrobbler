@@ -1,6 +1,6 @@
 # ListenBrainz moOde Scrobbler
 
-[![Version](https://img.shields.io/badge/version-1.3.1-blue.svg)](https://github.com/thestreamdigger/listenbrainz-moode-scrobbler)
+[![Version](https://img.shields.io/badge/version-1.3.2-blue.svg)](https://github.com/thestreamdigger/listenbrainz-moode-scrobbler)
 [![License](https://img.shields.io/badge/license-GPL%20v3-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![Status](https://img.shields.io/badge/status-stable-brightgreen.svg)]()
@@ -241,7 +241,7 @@ Tracks matching any pattern are skipped.
 ### Token not found
 
 ```
-[ERROR] Token not found: env or settings.json
+[ERROR] Token not found: LISTENBRAINZ_TOKEN in .env
 ```
 
 **Solution:**

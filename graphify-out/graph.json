@@ -1,0 +1,3097 @@
+{
+  "directed": false,
+  "multigraph": false,
+  "graph": {
+    "hyperedges": [
+      {
+        "id": "scrobble_timing_flow",
+        "label": "Scrobble Timing Flow",
+        "nodes": [
+          "readme_canonical_scrobble_rule",
+          "readme_min_play_time",
+          "src_main_listenbrainzscrobbler_canonical_delay",
+          "src_main_listenbrainzscrobbler_start_listen_timer",
+          "src_main_listenbrainzscrobbler_delayed_submit"
+        ],
+        "relation": "participate_in",
+        "confidence": "INFERRED",
+        "confidence_score": 0.85,
+        "source_file": "README.md"
+      },
+      {
+        "id": "offline_cache_recovery",
+        "label": "Offline Cache Recovery",
+        "nodes": [
+          "readme_offline_cache",
+          "src_main_listencache",
+          "src_main_listencache_process_pending_listens",
+          "src_main_listenbrainzscrobbler_check_connection_and_process_cache",
+          "changelog_atomic_cache_write"
+        ],
+        "relation": "participate_in",
+        "confidence": "INFERRED",
+        "confidence_score": 0.85,
+        "source_file": "README.md"
+      },
+      {
+        "id": "token_security_chain",
+        "label": "Token Security Chain",
+        "nodes": [
+          "readme_env_token_storage",
+          "requirements_python_dotenv",
+          "src_logger_logger_add_redaction",
+          "install_setup_configuration"
+        ],
+        "relation": "participate_in",
+        "confidence": "INFERRED",
+        "confidence_score": 0.75,
+        "source_file": "README.md"
+      }
+    ]
+  },
+  "nodes": [
+    {
+      "label": "install.sh",
+      "file_type": "code",
+      "source_file": "install.sh",
+      "source_location": "L1",
+      "metadata": {
+        "language": "bash",
+        "kind": "file"
+      },
+      "_origin": "ast",
+      "id": "install",
+      "community": 3,
+      "norm_label": "install.sh"
+    },
+    {
+      "label": "install.sh script",
+      "file_type": "code",
+      "source_file": "install.sh",
+      "source_location": "L1",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_entrypoint"
+      },
+      "_origin": "ast",
+      "id": "install_sh__entry",
+      "community": 3,
+      "norm_label": "install.sh script"
+    },
+    {
+      "label": "log_info()",
+      "file_type": "code",
+      "source_file": "install.sh",
+      "source_location": "L65",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_function"
+      },
+      "_origin": "ast",
+      "id": "install_log_info",
+      "community": 3,
+      "norm_label": "log_info()"
+    },
+    {
+      "label": "log_error()",
+      "file_type": "code",
+      "source_file": "install.sh",
+      "source_location": "L66",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_function"
+      },
+      "_origin": "ast",
+      "id": "install_log_error",
+      "community": 3,
+      "norm_label": "log_error()"
+    },
+    {
+      "label": "log_ok()",
+      "file_type": "code",
+      "source_file": "install.sh",
+      "source_location": "L67",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_function"
+      },
+      "_origin": "ast",
+      "id": "install_log_ok",
+      "community": 3,
+      "norm_label": "log_ok()"
+    },
+    {
+      "label": "check_root()",
+      "file_type": "code",
+      "source_file": "install.sh",
+      "source_location": "L70",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_function"
+      },
+      "_origin": "ast",
+      "id": "install_check_root",
+      "community": 3,
+      "norm_label": "check_root()"
+    },
+    {
+      "label": "execute_cmd()",
+      "file_type": "code",
+      "source_file": "install.sh",
+      "source_location": "L78",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_function"
+      },
+      "_origin": "ast",
+      "id": "install_execute_cmd",
+      "community": 3,
+      "norm_label": "execute_cmd()"
+    },
+    {
+      "label": "check_system()",
+      "file_type": "code",
+      "source_file": "install.sh",
+      "source_location": "L90",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_function"
+      },
+      "_origin": "ast",
+      "id": "install_check_system",
+      "community": 3,
+      "norm_label": "check_system()"
+    },
+    {
+      "label": "setup_python_env()",
+      "file_type": "code",
+      "source_file": "install.sh",
+      "source_location": "L115",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_function"
+      },
+      "_origin": "ast",
+      "id": "install_setup_python_env",
+      "community": 3,
+      "norm_label": "setup_python_env()"
+    },
+    {
+      "label": "setup_configuration()",
+      "file_type": "code",
+      "source_file": "install.sh",
+      "source_location": "L136",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_function"
+      },
+      "_origin": "ast",
+      "id": "install_setup_configuration",
+      "community": 3,
+      "norm_label": "setup_configuration()"
+    },
+    {
+      "label": "setup_permissions()",
+      "file_type": "code",
+      "source_file": "install.sh",
+      "source_location": "L214",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_function"
+      },
+      "_origin": "ast",
+      "id": "install_setup_permissions",
+      "community": 3,
+      "norm_label": "setup_permissions()"
+    },
+    {
+      "label": "setup_service()",
+      "file_type": "code",
+      "source_file": "install.sh",
+      "source_location": "L253",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_function"
+      },
+      "_origin": "ast",
+      "id": "install_setup_service",
+      "community": 3,
+      "norm_label": "setup_service()"
+    },
+    {
+      "label": "__version__.py",
+      "file_type": "code",
+      "source_file": "src/__version__.py",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_version",
+      "community": 5,
+      "norm_label": "__version__.py"
+    },
+    {
+      "label": "logger.py",
+      "file_type": "code",
+      "source_file": "src/logger.py",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_logger",
+      "community": 5,
+      "norm_label": "logger.py"
+    },
+    {
+      "label": "Logger",
+      "file_type": "code",
+      "source_file": "src/logger.py",
+      "source_location": "L7",
+      "_origin": "ast",
+      "id": "src_logger_logger",
+      "community": 6,
+      "norm_label": "logger"
+    },
+    {
+      "label": ".__init__()",
+      "file_type": "code",
+      "source_file": "src/logger.py",
+      "source_location": "L18",
+      "_origin": "ast",
+      "id": "src_logger_logger_init",
+      "community": 6,
+      "norm_label": ".__init__()"
+    },
+    {
+      "label": ".add_redaction()",
+      "file_type": "code",
+      "source_file": "src/logger.py",
+      "source_location": "L33",
+      "_origin": "ast",
+      "id": "src_logger_logger_add_redaction",
+      "community": 4,
+      "norm_label": ".add_redaction()"
+    },
+    {
+      "label": "._log()",
+      "file_type": "code",
+      "source_file": "src/logger.py",
+      "source_location": "L40",
+      "_origin": "ast",
+      "id": "src_logger_logger_log",
+      "community": 6,
+      "norm_label": "._log()"
+    },
+    {
+      "label": ".debug()",
+      "file_type": "code",
+      "source_file": "src/logger.py",
+      "source_location": "L62",
+      "_origin": "ast",
+      "id": "src_logger_logger_debug",
+      "community": 6,
+      "norm_label": ".debug()"
+    },
+    {
+      "label": ".info()",
+      "file_type": "code",
+      "source_file": "src/logger.py",
+      "source_location": "L63",
+      "_origin": "ast",
+      "id": "src_logger_logger_info",
+      "community": 6,
+      "norm_label": ".info()"
+    },
+    {
+      "label": ".wait()",
+      "file_type": "code",
+      "source_file": "src/logger.py",
+      "source_location": "L64",
+      "_origin": "ast",
+      "id": "src_logger_logger_wait",
+      "community": 6,
+      "norm_label": ".wait()"
+    },
+    {
+      "label": ".ok()",
+      "file_type": "code",
+      "source_file": "src/logger.py",
+      "source_location": "L65",
+      "_origin": "ast",
+      "id": "src_logger_logger_ok",
+      "community": 6,
+      "norm_label": ".ok()"
+    },
+    {
+      "label": ".warning()",
+      "file_type": "code",
+      "source_file": "src/logger.py",
+      "source_location": "L66",
+      "_origin": "ast",
+      "id": "src_logger_logger_warning",
+      "community": 6,
+      "norm_label": ".warning()"
+    },
+    {
+      "label": ".error()",
+      "file_type": "code",
+      "source_file": "src/logger.py",
+      "source_location": "L67",
+      "_origin": "ast",
+      "id": "src_logger_logger_error",
+      "community": 6,
+      "norm_label": ".error()"
+    },
+    {
+      "label": "main.py",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_main",
+      "community": 5,
+      "norm_label": "main.py"
+    },
+    {
+      "label": "print_banner()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L55",
+      "_origin": "ast",
+      "id": "src_main_print_banner",
+      "community": 5,
+      "norm_label": "print_banner()"
+    },
+    {
+      "label": "ListenCache",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L59",
+      "_origin": "ast",
+      "id": "src_main_listencache",
+      "community": 1,
+      "norm_label": "listencache"
+    },
+    {
+      "label": ".__init__()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L60",
+      "_origin": "ast",
+      "id": "src_main_listencache_init",
+      "community": 1,
+      "norm_label": ".__init__()"
+    },
+    {
+      "label": ".load_cache()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L68",
+      "_origin": "ast",
+      "id": "src_main_listencache_load_cache",
+      "community": 1,
+      "norm_label": ".load_cache()"
+    },
+    {
+      "label": "._save_unlocked()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L91",
+      "_origin": "ast",
+      "id": "src_main_listencache_save_unlocked",
+      "community": 1,
+      "norm_label": "._save_unlocked()"
+    },
+    {
+      "label": ".save_cache()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L127",
+      "_origin": "ast",
+      "id": "src_main_listencache_save_cache",
+      "community": 1,
+      "norm_label": ".save_cache()"
+    },
+    {
+      "label": "._schedule_save()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L131",
+      "_origin": "ast",
+      "id": "src_main_listencache_schedule_save",
+      "community": 1,
+      "norm_label": "._schedule_save()"
+    },
+    {
+      "label": ".add_listen()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L139",
+      "_origin": "ast",
+      "id": "src_main_listencache_add_listen",
+      "community": 1,
+      "norm_label": ".add_listen()"
+    },
+    {
+      "label": ".has_pending()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L144",
+      "_origin": "ast",
+      "id": "src_main_listencache_has_pending",
+      "community": 1,
+      "norm_label": ".has_pending()"
+    },
+    {
+      "label": ".process_pending_listens()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L148",
+      "_origin": "ast",
+      "id": "src_main_listencache_process_pending_listens",
+      "community": 1,
+      "norm_label": ".process_pending_listens()"
+    },
+    {
+      "label": "ListenBrainzScrobbler",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L209",
+      "_origin": "ast",
+      "id": "src_main_listenbrainzscrobbler",
+      "community": 0,
+      "norm_label": "listenbrainzscrobbler"
+    },
+    {
+      "label": "FileSystemEventHandler",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "filesystemeventhandler",
+      "community": 4,
+      "norm_label": "filesystemeventhandler"
+    },
+    {
+      "label": ".__init__()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L210",
+      "_origin": "ast",
+      "id": "src_main_listenbrainzscrobbler_init",
+      "community": 5,
+      "norm_label": ".__init__()"
+    },
+    {
+      "label": "._preprocess_filters()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L249",
+      "_origin": "ast",
+      "id": "src_main_listenbrainzscrobbler_preprocess_filters",
+      "community": 5,
+      "norm_label": "._preprocess_filters()"
+    },
+    {
+      "label": ".initialize()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L260",
+      "_origin": "ast",
+      "id": "src_main_listenbrainzscrobbler_initialize",
+      "community": 5,
+      "norm_label": ".initialize()"
+    },
+    {
+      "label": "._check_connection_periodically()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L280",
+      "_origin": "ast",
+      "id": "src_main_listenbrainzscrobbler_check_connection_periodically",
+      "community": 1,
+      "norm_label": "._check_connection_periodically()"
+    },
+    {
+      "label": ".check_connection_and_process_cache()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L284",
+      "_origin": "ast",
+      "id": "src_main_listenbrainzscrobbler_check_connection_and_process_cache",
+      "community": 1,
+      "norm_label": ".check_connection_and_process_cache()"
+    },
+    {
+      "label": ".check_initial_playback()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L299",
+      "_origin": "ast",
+      "id": "src_main_listenbrainzscrobbler_check_initial_playback",
+      "community": 0,
+      "norm_label": ".check_initial_playback()"
+    },
+    {
+      "label": ".parse_currentsong()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L309",
+      "_origin": "ast",
+      "id": "src_main_listenbrainzscrobbler_parse_currentsong",
+      "community": 0,
+      "norm_label": ".parse_currentsong()"
+    },
+    {
+      "label": "._extract_tracknumber()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L338",
+      "_origin": "ast",
+      "id": "src_main_listenbrainzscrobbler_extract_tracknumber",
+      "community": 0,
+      "norm_label": "._extract_tracknumber()"
+    },
+    {
+      "label": "._extract_duration_ms()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L346",
+      "_origin": "ast",
+      "id": "src_main_listenbrainzscrobbler_extract_duration_ms",
+      "community": 0,
+      "norm_label": "._extract_duration_ms()"
+    },
+    {
+      "label": "._canonical_delay()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L355",
+      "_origin": "ast",
+      "id": "src_main_listenbrainzscrobbler_canonical_delay",
+      "community": 0,
+      "norm_label": "._canonical_delay()"
+    },
+    {
+      "label": "._build_additional_info()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L365",
+      "_origin": "ast",
+      "id": "src_main_listenbrainzscrobbler_build_additional_info",
+      "community": 0,
+      "norm_label": "._build_additional_info()"
+    },
+    {
+      "label": "._build_listen_dict()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L386",
+      "_origin": "ast",
+      "id": "src_main_listenbrainzscrobbler_build_listen_dict",
+      "community": 0,
+      "norm_label": "._build_listen_dict()"
+    },
+    {
+      "label": "._same_track()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L397",
+      "_origin": "ast",
+      "id": "src_main_listenbrainzscrobbler_same_track",
+      "community": 0,
+      "norm_label": "._same_track()"
+    },
+    {
+      "label": ".submit_playing_now()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L402",
+      "_origin": "ast",
+      "id": "src_main_listenbrainzscrobbler_submit_playing_now",
+      "community": 0,
+      "norm_label": ".submit_playing_now()"
+    },
+    {
+      "label": ".submit_listen()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L416",
+      "_origin": "ast",
+      "id": "src_main_listenbrainzscrobbler_submit_listen",
+      "community": 0,
+      "norm_label": ".submit_listen()"
+    },
+    {
+      "label": "._clean_text()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L454",
+      "_origin": "ast",
+      "id": "src_main_listenbrainzscrobbler_clean_text",
+      "community": 0,
+      "norm_label": "._clean_text()"
+    },
+    {
+      "label": ".handle_song_update()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L459",
+      "_origin": "ast",
+      "id": "src_main_listenbrainzscrobbler_handle_song_update",
+      "community": 0,
+      "norm_label": ".handle_song_update()"
+    },
+    {
+      "label": "._start_listen_timer()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L499",
+      "_origin": "ast",
+      "id": "src_main_listenbrainzscrobbler_start_listen_timer",
+      "community": 0,
+      "norm_label": "._start_listen_timer()"
+    },
+    {
+      "label": "._delayed_submit()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L506",
+      "_origin": "ast",
+      "id": "src_main_listenbrainzscrobbler_delayed_submit",
+      "community": 0,
+      "norm_label": "._delayed_submit()"
+    },
+    {
+      "label": "._handle_file_change()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L514",
+      "_origin": "ast",
+      "id": "src_main_listenbrainzscrobbler_handle_file_change",
+      "community": 0,
+      "norm_label": "._handle_file_change()"
+    },
+    {
+      "label": ".on_modified()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L520",
+      "_origin": "ast",
+      "id": "src_main_listenbrainzscrobbler_on_modified",
+      "community": 0,
+      "norm_label": ".on_modified()"
+    },
+    {
+      "label": ".on_created()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L524",
+      "_origin": "ast",
+      "id": "src_main_listenbrainzscrobbler_on_created",
+      "community": 0,
+      "norm_label": ".on_created()"
+    },
+    {
+      "label": ".on_moved()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L528",
+      "_origin": "ast",
+      "id": "src_main_listenbrainzscrobbler_on_moved",
+      "community": 0,
+      "norm_label": ".on_moved()"
+    },
+    {
+      "label": "._load_settings()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L533",
+      "_origin": "ast",
+      "id": "src_main_listenbrainzscrobbler_load_settings",
+      "community": 5,
+      "norm_label": "._load_settings()"
+    },
+    {
+      "label": "._should_ignore()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L543",
+      "_origin": "ast",
+      "id": "src_main_listenbrainzscrobbler_should_ignore",
+      "community": 0,
+      "norm_label": "._should_ignore()"
+    },
+    {
+      "label": ".cleanup()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L559",
+      "_origin": "ast",
+      "id": "src_main_listenbrainzscrobbler_cleanup",
+      "community": 1,
+      "norm_label": ".cleanup()"
+    },
+    {
+      "label": "_parse_args()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L565",
+      "_origin": "ast",
+      "id": "src_main_parse_args",
+      "community": 5,
+      "norm_label": "_parse_args()"
+    },
+    {
+      "label": "main()",
+      "file_type": "code",
+      "source_file": "src/main.py",
+      "source_location": "L573",
+      "_origin": "ast",
+      "id": "src_main_main",
+      "community": 5,
+      "norm_label": "main()"
+    },
+    {
+      "label": "Atomic write (temp file + replace). Caller must hold self._lock.",
+      "file_type": "rationale",
+      "source_file": "src/main.py",
+      "source_location": "L92",
+      "_origin": "ast",
+      "id": "src_main_rationale_92",
+      "community": 1,
+      "norm_label": "atomic write (temp file + replace). caller must hold self._lock."
+    },
+    {
+      "label": "Uses single submission for small queues, batch for larger ones.",
+      "file_type": "rationale",
+      "source_file": "src/main.py",
+      "source_location": "L149",
+      "_origin": "ast",
+      "id": "src_main_rationale_149",
+      "community": 1,
+      "norm_label": "uses single submission for small queues, batch for larger ones."
+    },
+    {
+      "label": "Scrobble delay: min(duration * 0.5, 240s), floor at min_play_time.         With",
+      "file_type": "rationale",
+      "source_file": "src/main.py",
+      "source_location": "L356",
+      "_origin": "ast",
+      "id": "src_main_rationale_356",
+      "community": 0,
+      "norm_label": "scrobble delay: min(duration * 0.5, 240s), floor at min_play_time.         with"
+    },
+    {
+      "label": "README.md",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "readme",
+      "community": 2,
+      "norm_label": "readme.md"
+    },
+    {
+      "label": "CHANGELOG.md",
+      "file_type": "document",
+      "source_file": "CHANGELOG.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "changelog",
+      "community": 4,
+      "norm_label": "changelog.md"
+    },
+    {
+      "label": "CLAUDE.md",
+      "file_type": "document",
+      "source_file": "CLAUDE.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "claude",
+      "community": 2,
+      "norm_label": "claude.md"
+    },
+    {
+      "label": "requirements.txt",
+      "file_type": "document",
+      "source_file": "requirements.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "requirements",
+      "community": 4,
+      "norm_label": "requirements.txt"
+    },
+    {
+      "label": "ListenBrainz",
+      "file_type": "concept",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "readme_listenbrainz",
+      "community": 2,
+      "norm_label": "listenbrainz"
+    },
+    {
+      "label": "moOde Audio Player",
+      "file_type": "concept",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "readme_moode_audio_player",
+      "community": 2,
+      "norm_label": "moode audio player"
+    },
+    {
+      "label": "currentsong.txt",
+      "file_type": "concept",
+      "rationale": "moOde-written metadata file at /var/local/www/currentsong.txt; the scrobbler's sole input. Must be enabled in moOde MPD options or the scrobbler sees nothing.",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "readme_currentsong_txt",
+      "community": 2,
+      "norm_label": "currentsong.txt"
+    },
+    {
+      "label": "Canonical Scrobble Rule",
+      "file_type": "rationale",
+      "rationale": "min(duration * 50%, 240s) with floor at min_play_time, per ListenBrainz/MetaBrainz recommendations. Falls back to min_play_time when duration is absent from currentsong.txt (streams filtered via patterns).",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "readme_canonical_scrobble_rule",
+      "community": 2,
+      "norm_label": "canonical scrobble rule"
+    },
+    {
+      "label": "min_play_time Floor",
+      "file_type": "rationale",
+      "rationale": "Configurable floor (default 30s) under the canonical rule; also the always-used fallback delay for renderer sessions that carry no duration.",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "readme_min_play_time",
+      "community": 2,
+      "norm_label": "min_play_time floor"
+    },
+    {
+      "label": "Offline Cache",
+      "file_type": "rationale",
+      "rationale": "Survive network outages: individual submission for <3 pending, batch up to 10 after recovery, 60s connection re-check, atomic writes (fsync + rename), .corrupt.<timestamp> backup on parse errors.",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "readme_offline_cache",
+      "community": 2,
+      "norm_label": "offline cache"
+    },
+    {
+      "label": "Pattern Filters",
+      "file_type": "rationale",
+      "rationale": "Skip scrobbles matching artist/album/title patterns (radio streams, unknown artists); case sensitivity configurable.",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "readme_pattern_filters",
+      "community": 2,
+      "norm_label": "pattern filters"
+    },
+    {
+      "label": "Token Storage (.env)",
+      "file_type": "rationale",
+      "rationale": "ListenBrainz token lives in .env (mode 600, gitignored), never in settings.json; redacted in all log output.",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "readme_env_token_storage",
+      "community": 4,
+      "norm_label": "token storage (.env)"
+    },
+    {
+      "label": "lbms.service Systemd Unit",
+      "file_type": "concept",
+      "rationale": "Installed to /etc/systemd/system/lbms.service by install.sh; enabled for boot autostart; runs as $SUDO_USER (fallback pi); waits for network-online.target.",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "readme_lbms_service",
+      "community": 2,
+      "norm_label": "lbms.service systemd unit"
+    },
+    {
+      "label": "Listening Now Status",
+      "file_type": "concept",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "readme_listening_now",
+      "community": 2,
+      "norm_label": "listening now status"
+    },
+    {
+      "label": "AirPlay / Spotify Connect Renderers",
+      "file_type": "concept",
+      "rationale": "moOde 10.2+ writes renderer artist/album/title with no state or duration, so pause is not detectable and the scrobble delay is always the min_play_time fallback. Bluetooth, Squeezelite, RoonBridge, Deezer are out of scope (marker only, no metadata).",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "readme_renderer_sources",
+      "community": 2,
+      "norm_label": "airplay / spotify connect renderers"
+    },
+    {
+      "label": "--dry-run Mode",
+      "file_type": "concept",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "readme_dry_run_mode",
+      "community": 2,
+      "norm_label": "--dry-run mode"
+    },
+    {
+      "label": "Repeat-1 Single Listen Limitation",
+      "file_type": "rationale",
+      "rationale": "Repeating the same track without a state transition produces a single listen: track identity is title/artist/album and MPD does not signal the boundary in currentsong.txt.",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "readme_repeat_one_limitation",
+      "community": 4,
+      "norm_label": "repeat-1 single listen limitation"
+    },
+    {
+      "label": "Renderer Scrobbling (1.3.0)",
+      "file_type": "concept",
+      "source_file": "CHANGELOG.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "changelog_renderer_scrobbling",
+      "community": 2,
+      "norm_label": "renderer scrobbling (1.3.0)"
+    },
+    {
+      "label": "Pause/Resume Duplicate Fix (1.2.2)",
+      "file_type": "concept",
+      "rationale": "Pause no longer discards track state; resume re-arms the listen timer only if the play session has not scrobbled yet; listened_at reports play start time instead of submission time.",
+      "source_file": "CHANGELOG.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "changelog_duplicate_scrobble_fix",
+      "community": 4,
+      "norm_label": "pause/resume duplicate fix (1.2.2)"
+    },
+    {
+      "label": "Atomic Cache Write Durability",
+      "file_type": "concept",
+      "rationale": "1.2.0 closed a durability gap: fsync on file and parent dir; corrupted cache backed up as .corrupt.<ts> instead of silently destroyed.",
+      "source_file": "CHANGELOG.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "changelog_atomic_cache_write",
+      "community": 1,
+      "norm_label": "atomic cache write durability"
+    },
+    {
+      "label": "Song Identity by Title/Artist/Album",
+      "file_type": "rationale",
+      "rationale": "1.1.0: comparison uses only title/artist/album to prevent duplicate scrobbles when currentsong.txt rewrites with unchanged track.",
+      "source_file": "CHANGELOG.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "changelog_song_identity_rule",
+      "community": 4,
+      "norm_label": "song identity by title/artist/album"
+    },
+    {
+      "label": "watchdog 6.0.0",
+      "file_type": "concept",
+      "source_file": "requirements.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "requirements_watchdog",
+      "community": 4,
+      "norm_label": "watchdog 6.0.0"
+    },
+    {
+      "label": "liblistenbrainz 0.7.0",
+      "file_type": "concept",
+      "source_file": "requirements.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "requirements_liblistenbrainz",
+      "community": 4,
+      "norm_label": "liblistenbrainz 0.7.0"
+    },
+    {
+      "label": "python-dotenv 1.2.2",
+      "file_type": "concept",
+      "source_file": "requirements.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "requirements_python_dotenv",
+      "community": 4,
+      "norm_label": "python-dotenv 1.2.2"
+    }
+  ],
+  "links": [
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L70",
+      "weight": 1.0,
+      "source": "install",
+      "target": "install_check_root",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L90",
+      "weight": 1.0,
+      "source": "install",
+      "target": "install_check_system",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L78",
+      "weight": 1.0,
+      "source": "install",
+      "target": "install_execute_cmd",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L66",
+      "weight": 1.0,
+      "source": "install",
+      "target": "install_log_error",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L65",
+      "weight": 1.0,
+      "source": "install",
+      "target": "install_log_info",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L67",
+      "weight": 1.0,
+      "source": "install",
+      "target": "install_log_ok",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L136",
+      "weight": 1.0,
+      "source": "install",
+      "target": "install_setup_configuration",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L214",
+      "weight": 1.0,
+      "source": "install",
+      "target": "install_setup_permissions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L115",
+      "weight": 1.0,
+      "source": "install",
+      "target": "install_setup_python_env",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L253",
+      "weight": 1.0,
+      "source": "install",
+      "target": "install_setup_service",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "install",
+      "target": "install_sh__entry",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "readme",
+      "target": "install"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L283",
+      "weight": 1.0,
+      "context": "call",
+      "source": "install_sh__entry",
+      "target": "install_check_root",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L280",
+      "weight": 1.0,
+      "context": "call",
+      "source": "install_sh__entry",
+      "target": "install_check_system",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L277",
+      "weight": 1.0,
+      "context": "call",
+      "source": "install_sh__entry",
+      "target": "install_log_info",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L289",
+      "weight": 1.0,
+      "context": "call",
+      "source": "install_sh__entry",
+      "target": "install_setup_configuration",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L292",
+      "weight": 1.0,
+      "context": "call",
+      "source": "install_sh__entry",
+      "target": "install_setup_permissions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L286",
+      "weight": 1.0,
+      "context": "call",
+      "source": "install_sh__entry",
+      "target": "install_setup_python_env",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L295",
+      "weight": 1.0,
+      "context": "call",
+      "source": "install_sh__entry",
+      "target": "install_setup_service",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L91",
+      "weight": 1.0,
+      "context": "call",
+      "source": "install_check_system",
+      "target": "install_log_info",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L84",
+      "weight": 1.0,
+      "context": "call",
+      "source": "install_execute_cmd",
+      "target": "install_log_info",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L137",
+      "weight": 1.0,
+      "context": "call",
+      "source": "install_setup_configuration",
+      "target": "install_log_info",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L215",
+      "weight": 1.0,
+      "context": "call",
+      "source": "install_setup_permissions",
+      "target": "install_log_info",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L116",
+      "weight": 1.0,
+      "context": "call",
+      "source": "install_setup_python_env",
+      "target": "install_log_info",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L255",
+      "weight": 1.0,
+      "context": "call",
+      "source": "install_setup_service",
+      "target": "install_log_info",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L95",
+      "weight": 1.0,
+      "context": "call",
+      "source": "install_check_system",
+      "target": "install_log_error",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L82",
+      "weight": 1.0,
+      "context": "call",
+      "source": "install_execute_cmd",
+      "target": "install_log_error",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L148",
+      "weight": 1.0,
+      "context": "call",
+      "source": "install_setup_configuration",
+      "target": "install_log_error",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L111",
+      "weight": 1.0,
+      "context": "call",
+      "source": "install_check_system",
+      "target": "install_log_ok",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L209",
+      "weight": 1.0,
+      "context": "call",
+      "source": "install_setup_configuration",
+      "target": "install_log_ok",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L249",
+      "weight": 1.0,
+      "context": "call",
+      "source": "install_setup_permissions",
+      "target": "install_log_ok",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L132",
+      "weight": 1.0,
+      "context": "call",
+      "source": "install_setup_python_env",
+      "target": "install_log_ok",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L270",
+      "weight": 1.0,
+      "context": "call",
+      "source": "install_setup_service",
+      "target": "install_log_ok",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L123",
+      "weight": 1.0,
+      "context": "call",
+      "source": "install_setup_python_env",
+      "target": "install_execute_cmd",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L264",
+      "weight": 1.0,
+      "context": "call",
+      "source": "install_setup_service",
+      "target": "install_execute_cmd",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "implements",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "install_setup_service",
+      "target": "readme_lbms_service"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "claude",
+      "target": "src_version"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L28",
+      "weight": 1.0,
+      "source": "src_main",
+      "target": "src_version",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/logger.py",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "src_logger",
+      "target": "src_logger_logger",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L29",
+      "weight": 1.0,
+      "source": "src_main",
+      "target": "src_logger",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/logger.py",
+      "source_location": "L33",
+      "weight": 1.0,
+      "source": "src_logger_logger",
+      "target": "src_logger_logger_add_redaction",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/logger.py",
+      "source_location": "L62",
+      "weight": 1.0,
+      "source": "src_logger_logger",
+      "target": "src_logger_logger_debug",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/logger.py",
+      "source_location": "L67",
+      "weight": 1.0,
+      "source": "src_logger_logger",
+      "target": "src_logger_logger_error",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/logger.py",
+      "source_location": "L63",
+      "weight": 1.0,
+      "source": "src_logger_logger",
+      "target": "src_logger_logger_info",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/logger.py",
+      "source_location": "L18",
+      "weight": 1.0,
+      "source": "src_logger_logger",
+      "target": "src_logger_logger_init",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/logger.py",
+      "source_location": "L40",
+      "weight": 1.0,
+      "source": "src_logger_logger",
+      "target": "src_logger_logger_log",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/logger.py",
+      "source_location": "L65",
+      "weight": 1.0,
+      "source": "src_logger_logger",
+      "target": "src_logger_logger_ok",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/logger.py",
+      "source_location": "L64",
+      "weight": 1.0,
+      "source": "src_logger_logger",
+      "target": "src_logger_logger_wait",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/logger.py",
+      "source_location": "L66",
+      "weight": 1.0,
+      "source": "src_logger_logger",
+      "target": "src_logger_logger_warning",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "source_file": "src/main.py",
+      "source_location": "L29",
+      "weight": 0.8,
+      "source": "src_main_listenbrainzscrobbler",
+      "target": "src_logger_logger",
+      "confidence_score": 0.5
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "src/main.py",
+      "source_location": "L222",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler_init",
+      "target": "src_logger_logger"
+    },
+    {
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "source_file": "src/main.py",
+      "source_location": "L29",
+      "weight": 0.8,
+      "source": "src_main_listencache",
+      "target": "src_logger_logger",
+      "confidence_score": 0.5
+    },
+    {
+      "relation": "implements",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_logger_logger_add_redaction",
+      "target": "readme_env_token_storage"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/logger.py",
+      "source_location": "L62",
+      "weight": 1.0,
+      "source": "src_logger_logger_debug",
+      "target": "src_logger_logger_log",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/logger.py",
+      "source_location": "L67",
+      "weight": 1.0,
+      "source": "src_logger_logger_error",
+      "target": "src_logger_logger_log",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/logger.py",
+      "source_location": "L63",
+      "weight": 1.0,
+      "source": "src_logger_logger_info",
+      "target": "src_logger_logger_log",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/logger.py",
+      "source_location": "L65",
+      "weight": 1.0,
+      "source": "src_logger_logger_ok",
+      "target": "src_logger_logger_log",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/logger.py",
+      "source_location": "L64",
+      "weight": 1.0,
+      "source": "src_logger_logger_wait",
+      "target": "src_logger_logger_log",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/logger.py",
+      "source_location": "L66",
+      "weight": 1.0,
+      "source": "src_logger_logger_warning",
+      "target": "src_logger_logger_log",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L209",
+      "weight": 1.0,
+      "source": "src_main",
+      "target": "src_main_listenbrainzscrobbler",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L59",
+      "weight": 1.0,
+      "source": "src_main",
+      "target": "src_main_listencache",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L573",
+      "weight": 1.0,
+      "source": "src_main",
+      "target": "src_main_main",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L565",
+      "weight": 1.0,
+      "source": "src_main",
+      "target": "src_main_parse_args",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L55",
+      "weight": 1.0,
+      "source": "src_main",
+      "target": "src_main_print_banner",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L211",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler_init",
+      "target": "src_main_print_banner",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L272",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler_initialize",
+      "target": "src_main_listencache",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "implements",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_main_listencache",
+      "target": "readme_offline_cache"
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L139",
+      "weight": 1.0,
+      "source": "src_main_listencache",
+      "target": "src_main_listencache_add_listen",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L144",
+      "weight": 1.0,
+      "source": "src_main_listencache",
+      "target": "src_main_listencache_has_pending",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L60",
+      "weight": 1.0,
+      "source": "src_main_listencache",
+      "target": "src_main_listencache_init",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L68",
+      "weight": 1.0,
+      "source": "src_main_listencache",
+      "target": "src_main_listencache_load_cache",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L148",
+      "weight": 1.0,
+      "source": "src_main_listencache",
+      "target": "src_main_listencache_process_pending_listens",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L127",
+      "weight": 1.0,
+      "source": "src_main_listencache",
+      "target": "src_main_listencache_save_cache",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L91",
+      "weight": 1.0,
+      "source": "src_main_listencache",
+      "target": "src_main_listencache_save_unlocked",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L131",
+      "weight": 1.0,
+      "source": "src_main_listencache",
+      "target": "src_main_listencache_schedule_save",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L66",
+      "weight": 1.0,
+      "source": "src_main_listencache_init",
+      "target": "src_main_listencache_load_cache",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L72",
+      "weight": 1.0,
+      "source": "src_main_listencache_load_cache",
+      "target": "src_main_listencache_save_unlocked",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "CHANGELOG.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "changelog_atomic_cache_write",
+      "target": "src_main_listencache_save_unlocked"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L129",
+      "weight": 1.0,
+      "source": "src_main_listencache_save_cache",
+      "target": "src_main_listencache_save_unlocked",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L92",
+      "weight": 1.0,
+      "source": "src_main_rationale_92",
+      "target": "src_main_listencache_save_unlocked",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L562",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler_cleanup",
+      "target": "src_main_listencache_save_cache",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L142",
+      "weight": 1.0,
+      "source": "src_main_listencache_add_listen",
+      "target": "src_main_listencache_schedule_save",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L164",
+      "weight": 1.0,
+      "source": "src_main_listencache_process_pending_listens",
+      "target": "src_main_listencache_schedule_save",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L449",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler_submit_listen",
+      "target": "src_main_listencache_add_listen",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L285",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler_check_connection_and_process_cache",
+      "target": "src_main_listencache_has_pending",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L291",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler_check_connection_and_process_cache",
+      "target": "src_main_listencache_process_pending_listens",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L149",
+      "weight": 1.0,
+      "source": "src_main_rationale_149",
+      "target": "src_main_listencache_process_pending_listens",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "requirements.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "requirements_liblistenbrainz",
+      "target": "src_main_listenbrainzscrobbler"
+    },
+    {
+      "relation": "inherits",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L209",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler",
+      "target": "filesystemeventhandler",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L365",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler",
+      "target": "src_main_listenbrainzscrobbler_build_additional_info",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L386",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler",
+      "target": "src_main_listenbrainzscrobbler_build_listen_dict",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L355",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler",
+      "target": "src_main_listenbrainzscrobbler_canonical_delay",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L284",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler",
+      "target": "src_main_listenbrainzscrobbler_check_connection_and_process_cache",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L280",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler",
+      "target": "src_main_listenbrainzscrobbler_check_connection_periodically",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L299",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler",
+      "target": "src_main_listenbrainzscrobbler_check_initial_playback",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L454",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler",
+      "target": "src_main_listenbrainzscrobbler_clean_text",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L559",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler",
+      "target": "src_main_listenbrainzscrobbler_cleanup",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L506",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler",
+      "target": "src_main_listenbrainzscrobbler_delayed_submit",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L346",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler",
+      "target": "src_main_listenbrainzscrobbler_extract_duration_ms",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L338",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler",
+      "target": "src_main_listenbrainzscrobbler_extract_tracknumber",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L514",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler",
+      "target": "src_main_listenbrainzscrobbler_handle_file_change",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L459",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler",
+      "target": "src_main_listenbrainzscrobbler_handle_song_update",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L210",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler",
+      "target": "src_main_listenbrainzscrobbler_init",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L260",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler",
+      "target": "src_main_listenbrainzscrobbler_initialize",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L533",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler",
+      "target": "src_main_listenbrainzscrobbler_load_settings",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L524",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler",
+      "target": "src_main_listenbrainzscrobbler_on_created",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L520",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler",
+      "target": "src_main_listenbrainzscrobbler_on_modified",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L528",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler",
+      "target": "src_main_listenbrainzscrobbler_on_moved",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L309",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler",
+      "target": "src_main_listenbrainzscrobbler_parse_currentsong",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L249",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler",
+      "target": "src_main_listenbrainzscrobbler_preprocess_filters",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L397",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler",
+      "target": "src_main_listenbrainzscrobbler_same_track",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L543",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler",
+      "target": "src_main_listenbrainzscrobbler_should_ignore",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L499",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler",
+      "target": "src_main_listenbrainzscrobbler_start_listen_timer",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L416",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler",
+      "target": "src_main_listenbrainzscrobbler_submit_listen",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L402",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler",
+      "target": "src_main_listenbrainzscrobbler_submit_playing_now",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L587",
+      "weight": 1.0,
+      "source": "src_main_main",
+      "target": "src_main_listenbrainzscrobbler",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "requirements.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "requirements_watchdog",
+      "target": "filesystemeventhandler"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L221",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler_init",
+      "target": "src_main_listenbrainzscrobbler_load_settings",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L247",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler_init",
+      "target": "src_main_listenbrainzscrobbler_preprocess_filters",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L591",
+      "weight": 1.0,
+      "source": "src_main_main",
+      "target": "src_main_listenbrainzscrobbler_initialize",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L282",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler_check_connection_periodically",
+      "target": "src_main_listenbrainzscrobbler_check_connection_and_process_cache",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L305",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler_check_initial_playback",
+      "target": "src_main_listenbrainzscrobbler_handle_song_update",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L301",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler_check_initial_playback",
+      "target": "src_main_listenbrainzscrobbler_parse_currentsong",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L605",
+      "weight": 1.0,
+      "source": "src_main_main",
+      "target": "src_main_listenbrainzscrobbler_check_initial_playback",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L516",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler_handle_file_change",
+      "target": "src_main_listenbrainzscrobbler_parse_currentsong",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler_parse_currentsong",
+      "target": "readme_currentsong_txt"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L319",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler_parse_currentsong",
+      "target": "src_main_listenbrainzscrobbler_clean_text",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L375",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler_build_additional_info",
+      "target": "src_main_listenbrainzscrobbler_extract_tracknumber",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L378",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler_build_additional_info",
+      "target": "src_main_listenbrainzscrobbler_extract_duration_ms",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L359",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler_canonical_delay",
+      "target": "src_main_listenbrainzscrobbler_extract_duration_ms",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "implements",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler_canonical_delay",
+      "target": "readme_canonical_scrobble_rule"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L503",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler_start_listen_timer",
+      "target": "src_main_listenbrainzscrobbler_canonical_delay",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L356",
+      "weight": 1.0,
+      "source": "src_main_rationale_356",
+      "target": "src_main_listenbrainzscrobbler_canonical_delay",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L391",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler_build_listen_dict",
+      "target": "src_main_listenbrainzscrobbler_build_additional_info",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L421",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler_submit_listen",
+      "target": "src_main_listenbrainzscrobbler_build_listen_dict",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L404",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler_submit_playing_now",
+      "target": "src_main_listenbrainzscrobbler_build_listen_dict",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "CHANGELOG.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "changelog_song_identity_rule",
+      "target": "src_main_listenbrainzscrobbler_same_track"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L509",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler_delayed_submit",
+      "target": "src_main_listenbrainzscrobbler_same_track",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L481",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler_handle_song_update",
+      "target": "src_main_listenbrainzscrobbler_same_track",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L490",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler_handle_song_update",
+      "target": "src_main_listenbrainzscrobbler_submit_playing_now",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "implements",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler_submit_playing_now",
+      "target": "readme_listening_now"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L512",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler_delayed_submit",
+      "target": "src_main_listenbrainzscrobbler_submit_listen",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "CHANGELOG.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "changelog_duplicate_scrobble_fix",
+      "target": "src_main_listenbrainzscrobbler_handle_song_update"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L516",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler_handle_file_change",
+      "target": "src_main_listenbrainzscrobbler_handle_song_update",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L463",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler_handle_song_update",
+      "target": "src_main_listenbrainzscrobbler_should_ignore",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L486",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler_handle_song_update",
+      "target": "src_main_listenbrainzscrobbler_start_listen_timer",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L526",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler_on_created",
+      "target": "src_main_listenbrainzscrobbler_handle_file_change",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L522",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler_on_modified",
+      "target": "src_main_listenbrainzscrobbler_handle_file_change",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L531",
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler_on_moved",
+      "target": "src_main_listenbrainzscrobbler_handle_file_change",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "implements",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_main_listenbrainzscrobbler_should_ignore",
+      "target": "readme_pattern_filters"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L630",
+      "weight": 1.0,
+      "source": "src_main_main",
+      "target": "src_main_listenbrainzscrobbler_cleanup",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main.py",
+      "source_location": "L574",
+      "weight": 1.0,
+      "source": "src_main_main",
+      "target": "src_main_parse_args",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "readme",
+      "target": "readme_canonical_scrobble_rule"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "readme",
+      "target": "readme_currentsong_txt"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "readme",
+      "target": "readme_dry_run_mode"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "readme",
+      "target": "readme_env_token_storage"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "readme",
+      "target": "readme_lbms_service"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "readme",
+      "target": "readme_listenbrainz"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "readme",
+      "target": "readme_listening_now"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "readme",
+      "target": "readme_moode_audio_player"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "readme",
+      "target": "readme_offline_cache"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "readme",
+      "target": "readme_pattern_filters"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "readme",
+      "target": "readme_renderer_sources"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "readme",
+      "target": "readme_repeat_one_limitation"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CHANGELOG.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "changelog",
+      "target": "changelog_atomic_cache_write"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CHANGELOG.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "changelog",
+      "target": "changelog_duplicate_scrobble_fix"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CHANGELOG.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "changelog",
+      "target": "changelog_renderer_scrobbling"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CHANGELOG.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "changelog",
+      "target": "changelog_song_identity_rule"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CHANGELOG.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "changelog",
+      "target": "readme_canonical_scrobble_rule"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CHANGELOG.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "changelog",
+      "target": "requirements_liblistenbrainz"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CHANGELOG.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "changelog",
+      "target": "requirements_python_dotenv"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CHANGELOG.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "changelog",
+      "target": "requirements_watchdog"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "claude",
+      "target": "readme_lbms_service"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "claude",
+      "target": "readme_listenbrainz"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "claude",
+      "target": "readme_listening_now"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "claude",
+      "target": "readme_moode_audio_player"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "claude",
+      "target": "readme_offline_cache"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "claude",
+      "target": "readme_pattern_filters"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "requirements.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "requirements",
+      "target": "requirements_liblistenbrainz"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "requirements.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "requirements",
+      "target": "requirements_python_dotenv"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "requirements.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "requirements",
+      "target": "requirements_watchdog"
+    },
+    {
+      "relation": "shares_data_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "readme_currentsong_txt",
+      "target": "readme_moode_audio_player"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "readme_canonical_scrobble_rule",
+      "target": "readme_min_play_time"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "readme_renderer_sources",
+      "target": "readme_min_play_time"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "requirements.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "requirements_python_dotenv",
+      "target": "readme_env_token_storage"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "CHANGELOG.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "changelog_renderer_scrobbling",
+      "target": "readme_renderer_sources"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "readme_repeat_one_limitation",
+      "target": "changelog_song_identity_rule"
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "scrobble_timing_flow",
+      "label": "Scrobble Timing Flow",
+      "nodes": [
+        "readme_canonical_scrobble_rule",
+        "readme_min_play_time",
+        "src_main_listenbrainzscrobbler_canonical_delay",
+        "src_main_listenbrainzscrobbler_start_listen_timer",
+        "src_main_listenbrainzscrobbler_delayed_submit"
+      ],
+      "relation": "participate_in",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "README.md"
+    },
+    {
+      "id": "offline_cache_recovery",
+      "label": "Offline Cache Recovery",
+      "nodes": [
+        "readme_offline_cache",
+        "src_main_listencache",
+        "src_main_listencache_process_pending_listens",
+        "src_main_listenbrainzscrobbler_check_connection_and_process_cache",
+        "changelog_atomic_cache_write"
+      ],
+      "relation": "participate_in",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "README.md"
+    },
+    {
+      "id": "token_security_chain",
+      "label": "Token Security Chain",
+      "nodes": [
+        "readme_env_token_storage",
+        "requirements_python_dotenv",
+        "src_logger_logger_add_redaction",
+        "install_setup_configuration"
+      ],
+      "relation": "participate_in",
+      "confidence": "INFERRED",
+      "confidence_score": 0.75,
+      "source_file": "README.md"
+    }
+  ],
+  "built_at_commit": "dcfe118d4342330b3d30c459bb46d942a90fd1ac"
+}

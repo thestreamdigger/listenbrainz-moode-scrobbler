@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.3.2] - 2026-07-05
+### Fixed
+- install.sh now rewrites User=/Group= in the systemd unit to the invoking
+  user (was left as pi while config files were chowned mode 600 to
+  $SUDO_USER, breaking service start on non-pi installs)
+- Unit rewrite is CRLF-proof: sed strips \r before matching, service example
+  normalized to LF and pinned via .gitattributes (rsync from Windows
+  preserves CRLF, which silently defeated the User=/Group= anchors)
+
+### Removed
+- Undocumented listenbrainz_token fallback from settings.json; .env is the
+  single token path, matching the README Security section
+- Dead currentsong fields from parser: date, composer, bitrate, encoded
+  (parsed but never used; same cleanup as 'genre' in 1.2.1)
+
 ## [1.3.1] - 2026-06-09
 ### Changed
 - Log and docs use ListenBrainz term "Listening now" (was "Now playing")

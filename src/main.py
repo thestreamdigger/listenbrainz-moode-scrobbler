@@ -40,8 +40,7 @@ SUBMISSION_CLIENT = 'lbms'
 MEDIA_PLAYER = 'MPD'
 
 SONG_FIELDS = {
-    'file', 'title', 'artist', 'album', 'state', 'track', 'date',
-    'composer', 'duration', 'bitrate', 'encoded',
+    'file', 'title', 'artist', 'album', 'state', 'track', 'duration',
     'musicbrainz_albumid'
 }
 SONG_IDENTITY_FIELDS = ('title', 'artist', 'album')
@@ -222,11 +221,11 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
         self.log = Logger(self.settings)
         self.client = None
 
-        self._token = os.getenv('LISTENBRAINZ_TOKEN') or self.settings.get('listenbrainz_token')
+        self._token = os.getenv('LISTENBRAINZ_TOKEN')
 
         if not self._token:
-            self.log.error("Token not found: env or settings.json")
-            raise ValueError("Token not found: env or settings.json")
+            self.log.error("Token not found: LISTENBRAINZ_TOKEN in .env")
+            raise ValueError("Token not found: LISTENBRAINZ_TOKEN in .env")
 
         self.log.add_redaction(self._token)
 

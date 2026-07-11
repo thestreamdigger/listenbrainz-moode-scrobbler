@@ -43,3 +43,5 @@ src/cache/
 
 # Claude Code
 .claude/
+# graphify knowledge-graph output (regenerated cache)
+graphify-out/

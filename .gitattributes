@@ -1,1 +1,8 @@
-examples/lbms.service.example text eol=lf
+# Normalize all text to LF in the repo; Windows checkouts stay LF too.
+# Everything here runs on a Pi: a CRLF shebang or unit file breaks there.
+* text=auto eol=lf
+
+# Binary assets: never touch line endings.
+*.png binary
+*.jpg binary
+*.gif binary

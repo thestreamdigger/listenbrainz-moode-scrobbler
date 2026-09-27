@@ -1,3 +1,4 @@
 watchdog==6.0.0
 liblistenbrainz==0.7.0
-python-dotenv==1.2.2 
+python-dotenv==1.2.3
+requests==2.34.2

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # ListenBrainz moOde Scrobbler
-# Copyright (C) 2025 StreamDigger
+# Copyright (C) 2024-2026 StreamDigger
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,562 +13,68 @@ import json
 import os
 import signal
 import sys
-import tempfile
-import time
-from collections import deque
-from html import unescape
 from pathlib import Path
-from threading import Event, Lock, Thread, Timer
+from threading import Event, Thread
 
 from dotenv import load_dotenv
-from liblistenbrainz import Listen, ListenBrainz
-from watchdog.events import FileSystemEventHandler
+from liblistenbrainz import ListenBrainz
+from liblistenbrainz import client as lb_client
+from liblistenbrainz.errors import InvalidAuthTokenException
+from requests.adapters import HTTPAdapter
+from watchdog.events import FileClosedEvent, FileCreatedEvent, FileMovedEvent, FileSystemEvent, FileSystemEventHandler
 from watchdog.observers import Observer
 
 from __version__ import __version__
+from cache import ListenCache, describe
+from currentsong import read
 from logger import Logger
+from scrobbler import Scrobbler
 
-MAX_CACHE_SIZE = 1000
-SMALL_QUEUE_THRESHOLD = 3
-BATCH_SIZE = 10
-CONNECTION_CHECK_INTERVAL = 60
-SAVE_DELAY = 5
-DEFAULT_MIN_PLAY_TIME = 30
-CANONICAL_MAX_DELAY = 240
-CANONICAL_HALF = 0.5
-SUBMISSION_CLIENT = 'lbms'
-MEDIA_PLAYER = 'MPD'
-
-SONG_FIELDS = {
-    'file', 'title', 'artist', 'album', 'state', 'track', 'duration',
-    'musicbrainz_albumid'
-}
-SONG_IDENTITY_FIELDS = ('title', 'artist', 'album')
-RENDERER_SOURCES = {
-    'AirPlay Active': 'AirPlay',
-    'Spotify Active': 'Spotify',
-}
-MUSIC_SERVICES = {'Spotify': 'spotify.com'}
+SRC = Path(__file__).resolve().parent
+HTTP_TIMEOUT = (10, 30)
+CACHE_INTERVAL = 60
+USER_AGENT = f"lbms/{__version__} ( https://github.com/thestreamdigger/listenbrainz-moode-scrobbler )"
 
 
-def print_banner():
-    print(f"\nLISTENBRAINZ-MOODE-SCROBBLER v{__version__}\n")
+class Transport(HTTPAdapter):
+    """liblistenbrainz 0.7.0 sends no User-Agent (the API requires one) and
+    no timeout (a stalled connection blocks its caller forever). It mounts a
+    module-level adapter on every request; replacing it fixes both."""
+
+    def send(self, request, **kwargs):
+        request.headers['User-Agent'] = USER_AGENT
+        if kwargs.get('timeout') is None:
+            kwargs['timeout'] = HTTP_TIMEOUT
+        return super().send(request, **kwargs)
 
 
-class ListenCache:
-    def __init__(self, cache_file, logger):
-        self.cache_file = cache_file
-        self.pending_listens = deque(maxlen=MAX_CACHE_SIZE)
-        self.log = logger
-        self._save_timer = None
-        self._lock = Lock()
-        self.load_cache()
+class CurrentSongHandler(FileSystemEventHandler):
+    """moOde rewrites currentsong.txt in place (truncate + write) when /tmp
+    is tmpfs, its default, and by rename from /tmp otherwise. Close-after-
+    write and creation are the only moments the file is complete."""
 
-    def load_cache(self):
-        with self._lock:
-            try:
-                if not os.path.exists(self.cache_file):
-                    self._save_unlocked()
-                    return
+    EVENTS = [FileClosedEvent, FileCreatedEvent, FileMovedEvent]
 
-                with open(self.cache_file, 'r') as f:
-                    content = f.read().strip()
-                    if content:
-                        self.pending_listens = deque(json.loads(content), maxlen=MAX_CACHE_SIZE)
-                    else:
-                        self._save_unlocked()
-            except Exception as e:
-                self.log.error(f"Cache corrupted: {e}")
-                try:
-                    backup = f"{self.cache_file}.corrupt.{int(time.time())}"
-                    os.rename(self.cache_file, backup)
-                    self.log.warning(f"Cache backup: {backup}")
-                except Exception as backup_err:
-                    self.log.error(f"Cache backup failed: {backup_err}")
-                self._save_unlocked()
+    def __init__(self, path: Path, scrobbler: Scrobbler, log: Logger):
+        self.path = path
+        self.scrobbler = scrobbler
+        self.log = log
 
-    def _save_unlocked(self):
-        """Atomic write (temp file + replace). Caller must hold self._lock."""
+    def on_any_event(self, event: FileSystemEvent) -> None:
+        target = os.fsdecode(event.dest_path or event.src_path)
+        if os.path.realpath(target) == os.path.realpath(self.path):
+            self.refresh()
+
+    def refresh(self) -> None:
         try:
-            if self._save_timer:
-                self._save_timer.cancel()
-                self._save_timer = None
-
-            cache_dir = os.path.dirname(self.cache_file)
-            os.makedirs(cache_dir, exist_ok=True)
-
-            temp_fd, temp_path = tempfile.mkstemp(prefix=".lbms_cache_", dir=cache_dir)
-            try:
-                with os.fdopen(temp_fd, 'w') as tmp_f:
-                    json.dump(list(self.pending_listens), tmp_f)
-                    tmp_f.flush()
-                    os.fsync(tmp_f.fileno())
-                os.replace(temp_path, self.cache_file)
-
-                dir_fd = os.open(cache_dir, os.O_RDONLY)
-                try:
-                    os.fsync(dir_fd)
-                finally:
-                    os.close(dir_fd)
-            finally:
-                if os.path.exists(temp_path):
-                    try:
-                        os.remove(temp_path)
-                    except Exception:
-                        pass
-        except Exception as e:
-            self.log.error(f"Cache save failed: {e}")
-
-    def save_cache(self):
-        with self._lock:
-            self._save_unlocked()
-
-    def _schedule_save(self):
-        with self._lock:
-            if self._save_timer:
-                self._save_timer.cancel()
-
-            self._save_timer = Timer(SAVE_DELAY, self.save_cache)
-            self._save_timer.start()
-
-    def add_listen(self, listen_dict):
-        with self._lock:
-            self.pending_listens.append(listen_dict)
-        self._schedule_save()
-
-    def has_pending(self):
-        with self._lock:
-            return len(self.pending_listens) > 0
-
-    def process_pending_listens(self, client):
-        """Uses single submission for small queues, batch for larger ones."""
-        with self._lock:
-            small_queue = len(self.pending_listens) < SMALL_QUEUE_THRESHOLD
-
-        if small_queue:
-            to_process = []
-            with self._lock:
-                while self.pending_listens:
-                    to_process.append(self.pending_listens.popleft())
-
-            for idx, listen_dict in enumerate(to_process):
-                try:
-                    listen = Listen(**listen_dict)
-                except Exception as e:
-                    self.log.error(f"Invalid listen dropped: {e}")
-                    self._schedule_save()
-                    continue
-                try:
-                    client.submit_single_listen(listen)
-                    self._schedule_save()
-                except Exception:
-                    with self._lock:
-                        for remaining in reversed(to_process[idx:]):
-                            self.pending_listens.appendleft(remaining)
-                    self._schedule_save()
-                    return False
-            return True
-
-        with self._lock:
-            batch_size = min(BATCH_SIZE, len(self.pending_listens))
-            extracted = []
-            for _ in range(batch_size):
-                if not self.pending_listens:
-                    break
-                extracted.append(self.pending_listens.popleft())
-
-        batch = []
-        valid_dicts = []
-        for listen_dict in extracted:
-            try:
-                batch.append(Listen(**listen_dict))
-                valid_dicts.append(listen_dict)
-            except Exception as e:
-                self.log.error(f"Invalid listen dropped: {e}")
-                self._schedule_save()
-
-        if batch:
-            try:
-                client.submit_multiple_listens(batch)
-                self._schedule_save()
-                return True
-            except Exception:
-                with self._lock:
-                    for listen_dict in reversed(valid_dicts):
-                        self.pending_listens.appendleft(listen_dict)
-                self._schedule_save()
-                return False
-
-        return True
-
-
-class ListenBrainzScrobbler(FileSystemEventHandler):
-    def __init__(self, dry_run=False):
-        print_banner()
-
-        self.dry_run = dry_run
-
-        env_path = Path(__file__).resolve().parent.parent / '.env'
-        if env_path.exists():
-            load_dotenv(dotenv_path=env_path)
-        else:
-            load_dotenv()
-
-        self.settings = self._load_settings()
-        self.log = Logger(self.settings)
-        self.client = None
-
-        self._token = os.getenv('LISTENBRAINZ_TOKEN')
-
-        if not self._token:
-            self.log.error("Token not found: LISTENBRAINZ_TOKEN in .env")
-            raise ValueError("Token not found: LISTENBRAINZ_TOKEN in .env")
-
-        self.log.add_redaction(self._token)
-
-        self.current_song = None
-        self.play_start_time = None
-        self.scrobbled = False
-        self.retry_count = self.settings['retry']['count']
-        self.retry_delay = self.settings['retry']['delay']
-
-        try:
-            self.min_play_time = max(0, int(self.settings.get('min_play_time', DEFAULT_MIN_PLAY_TIME)))
-        except Exception:
-            self.min_play_time = DEFAULT_MIN_PLAY_TIME
-
-        self._currentsong_realpath = os.path.realpath(self.settings['currentsong_file'])
-        self.listen_cache = None
-        self._shutdown_event = Event()
-        self._preprocess_filters()
-
-    def _preprocess_filters(self):
-        filters = self.settings.get('filters', {})
-        self._case_sensitive = filters.get('case_sensitive', False)
-
-        self._ignore_patterns = {}
-        for field, patterns in filters.get('ignore_patterns', {}).items():
-            if self._case_sensitive:
-                self._ignore_patterns[field] = patterns
-            else:
-                self._ignore_patterns[field] = [p.lower() for p in patterns]
-
-    def initialize(self):
-        self.log.wait("Token validating")
-        try:
-            self.client = ListenBrainz()
-            self.client.set_auth_token(self._token)
-            self.log.ok("Token ready")
-        except Exception as e:
-            self.log.error(f"Token failed: {e}")
-            return False
-
-        if self.settings['features']['enable_cache']:
-            cache_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cache')
-            self.listen_cache = ListenCache(
-                os.path.join(cache_dir, self.settings['cache_file']),
-                self.log
-            )
-            Thread(target=self._check_connection_periodically, daemon=True).start()
-
-        return True
-
-    def _check_connection_periodically(self):
-        while not self._shutdown_event.wait(CONNECTION_CHECK_INTERVAL):
-            self.check_connection_and_process_cache()
-
-    def check_connection_and_process_cache(self):
-        if not self.listen_cache or not self.listen_cache.has_pending():
+            song = read(self.path)
+        except (OSError, UnicodeDecodeError) as e:
+            self.log.debug(f"Read err: {e}")
             return
-
-        try:
-            self.log.info("Cache processing")
-
-            if self.listen_cache.process_pending_listens(self.client):
-                if self.listen_cache.has_pending():
-                    self.log.ok("Cache batch done")
-                else:
-                    self.log.ok("Cache done")
-            else:
-                self.log.warning("Cache partial")
-
-        except Exception as e:
-            self.log.debug(f"Conn check failed: {e}")
-
-    def check_initial_playback(self):
-        self.log.info("Initial check")
-        initial_song = self.parse_currentsong()
-
-        if initial_song and initial_song.get("state") == "play":
-            self.log.info(f"Playing: {initial_song.get('title')} - {initial_song.get('artist')}")
-            self.handle_song_update(initial_song)
-        else:
-            self.log.info("No track")
-
-    def parse_currentsong(self):
-        try:
-            with open(self.settings['currentsong_file'], 'r', encoding='utf-8') as f:
-                lines = f.readlines()
-
-            song_info = {field: None for field in SONG_FIELDS}
-
-            for line in lines:
-                key, sep, value = line.partition("=")
-                if sep and key in SONG_FIELDS:
-                    song_info[key] = self._clean_text(value)
-
-            if song_info['state']:
-                song_info['state'] = song_info['state'].lower()
-            else:
-                renderer = RENDERER_SOURCES.get(song_info.get('file') or '')
-                if renderer:
-                    song_info['state'] = 'play'
-                    song_info['source'] = renderer
-
-            if not song_info['title'] or not song_info['artist']:
-                return None
-
-            return song_info
-
-        except Exception as e:
-            self.log.error(f"Parse err: {e}")
-            return None
-
-    def _extract_tracknumber(self, song_info):
-        if not song_info.get('track'):
-            return None
-        try:
-            return int(song_info['track'].split('/')[0])
-        except (ValueError, AttributeError):
-            return None
-
-    def _extract_duration_ms(self, song_info):
-        raw = song_info.get('duration')
-        if not raw:
-            return None
-        try:
-            return int(float(raw) * 1000)
-        except (ValueError, TypeError):
-            return None
-
-    def _canonical_delay(self, song_info):
-        """Scrobble delay: min(duration * 0.5, 240s), floor at min_play_time.
-        Without duration, fall back to min_play_time (moOde does not always
-        emit duration=; streams are handled via ignore_patterns)."""
-        duration_ms = self._extract_duration_ms(song_info)
-        if duration_ms:
-            canonical = min(int(duration_ms / 1000 * CANONICAL_HALF), CANONICAL_MAX_DELAY)
-            return max(canonical, self.min_play_time)
-        return self.min_play_time
-
-    def _build_additional_info(self, song_info):
-        source = song_info.get('source')
-        info = {
-            'media_player': source or MEDIA_PLAYER,
-            'submission_client': SUBMISSION_CLIENT,
-            'submission_client_version': __version__,
-        }
-        service = MUSIC_SERVICES.get(source)
-        if service:
-            info['music_service'] = service
-        tracknumber = self._extract_tracknumber(song_info)
-        if tracknumber is not None:
-            info['tracknumber'] = tracknumber
-        duration_ms = self._extract_duration_ms(song_info)
-        if duration_ms:
-            info['duration_ms'] = duration_ms
-        release_mbid = song_info.get('musicbrainz_albumid')
-        if release_mbid:
-            info['release_mbid'] = release_mbid
-        return info
-
-    def _build_listen_dict(self, song_info, listened_at=None):
-        d = {
-            'track_name': song_info['title'],
-            'artist_name': song_info['artist'],
-            'release_name': song_info.get('album', ''),
-            'additional_info': self._build_additional_info(song_info),
-        }
-        if listened_at is not None:
-            d['listened_at'] = listened_at
-        return d
-
-    def _same_track(self, a, b):
-        if a is None or b is None:
-            return False
-        return all(a.get(f) == b.get(f) for f in SONG_IDENTITY_FIELDS)
-
-    def submit_playing_now(self, song_info):
-        try:
-            listen_dict = self._build_listen_dict(song_info)
-            if self.dry_run:
-                self.log.info(f"[DRY] Listening now: {song_info['title']} - {song_info['artist']}")
-                self.log.debug(f"[DRY] payload: {listen_dict}")
-                return True
-            self.client.submit_playing_now(Listen(**listen_dict))
-            self.log.info(f"Listening now: {song_info['title']} - {song_info['artist']}")
-            return True
-        except Exception as e:
-            self.log.error(f"Listening now err: {e}")
-            return False
-
-    def submit_listen(self, song_info, play_start_time):
-        if not self.settings['features']['enable_listen']:
-            return
-
-        listened_at = int(play_start_time)
-        listen_dict = self._build_listen_dict(song_info, listened_at)
-
-        if self.dry_run:
-            self.log.info(f"[DRY] Submit: {song_info['title']} - {song_info['artist']}")
-            self.log.debug(f"[DRY] payload: {listen_dict}")
-            return
-
-        for attempt in range(self.retry_count):
-            if self._shutdown_event.is_set():
-                self.log.warning("Shutdown: retries aborted")
-                break
-            try:
-                self.client.submit_single_listen(Listen(**listen_dict))
-                self.log.info(f"Submitted: {song_info['title']} - {song_info['artist']}")
-                return
-            except Exception as e:
-                self.log.error(f"Submit failed: {song_info['title']} - {song_info['artist']}")
-                self.log.error(f"Attempt {attempt + 1}/{self.retry_count}: {e}")
-                if attempt < self.retry_count - 1:
-                    self.log.wait(f"Retry in {self.retry_delay}s")
-                    if self._shutdown_event.wait(self.retry_delay):
-                        self.log.warning("Shutdown: retries aborted")
-                        break
-                else:
-                    self.log.error("Retries exhausted")
-
-        if self.listen_cache:
-            self.log.wait("Cache save (retry later)")
-            self.listen_cache.add_listen(listen_dict)
-            self.log.ok("Cached")
-        else:
-            self.log.error("Lost: cache disabled")
-
-    def _clean_text(self, text):
-        if not text:
-            return ""
-        return unescape(text).strip()
-
-    def handle_song_update(self, song_info):
-        if not song_info:
-            return
-
-        if self._should_ignore(song_info):
-            self._end_session()
-            self.log.debug(f"Ignored: {song_info.get('title')} - {song_info.get('artist')}")
-            return
-
-        state = song_info.get("state")
-        if state != "play":
-            if not self.current_song:
-                return
-            if state == "pause":
-                if self.play_start_time is not None:
-                    self.log.info(f"Paused: {self.current_song.get('title')}")
-                    self.play_start_time = None
-            else:
-                self._end_session()
-            return
-
-        if self._same_track(song_info, self.current_song):
-            if self.play_start_time is None:
-                self.log.info(f"Resumed: {song_info.get('title')}")
-                self.play_start_time = time.time()
-                if not self.scrobbled:
-                    self._start_listen_timer(song_info)
-            return
-
-        if self.settings['features']['enable_listening_now']:
-            self.submit_playing_now(song_info)
-        else:
-            self.log.info(f"Track: {song_info.get('title')} - {song_info.get('artist')}")
-
-        self.current_song = song_info
-        self.play_start_time = time.time()
-        self.scrobbled = False
-        self._start_listen_timer(song_info)
-
-    def _end_session(self):
-        if not self.current_song:
-            return
-        self.log.info(f"Stopped: {self.current_song.get('title')}")
-        self.current_song = None
-        self.play_start_time = None
-        self.scrobbled = False
-
-    def _start_listen_timer(self, song_info):
-        if not self.settings['features']['enable_listen']:
-            return
-        play_start = self.play_start_time
-        delay = self._canonical_delay(song_info)
-        Thread(target=self._delayed_submit, args=(song_info, play_start, delay), daemon=True).start()
-
-    def _delayed_submit(self, song_info, play_start_time, delay):
-        if self._shutdown_event.wait(delay):
-            return
-        if self.play_start_time != play_start_time or not self._same_track(song_info, self.current_song):
-            return
-        self.scrobbled = True
-        self.submit_listen(song_info, play_start_time)
-
-    def _handle_file_change(self, event_type):
-        try:
-            self.handle_song_update(self.parse_currentsong())
-        except Exception as e:
-            self.log.debug(f"File {event_type} err: {e}")
-
-    def on_modified(self, event):
-        if os.path.realpath(event.src_path) == self._currentsong_realpath:
-            self._handle_file_change("changed")
-
-    def on_created(self, event):
-        if os.path.realpath(event.src_path) == self._currentsong_realpath:
-            self._handle_file_change("created")
-
-    def on_moved(self, event):
-        dest = getattr(event, 'dest_path', None)
-        if dest and os.path.realpath(dest) == self._currentsong_realpath:
-            self._handle_file_change("moved")
-
-    def _load_settings(self):
-        settings_path = os.path.join(os.path.dirname(__file__), 'settings.json')
-        try:
-            with open(settings_path, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except FileNotFoundError:
-            raise FileNotFoundError(f"Settings not found: {settings_path}")
-        except json.JSONDecodeError as e:
-            raise json.JSONDecodeError(f"Settings invalid JSON: {e.msg}", e.doc, e.pos)
-
-    def _should_ignore(self, song_info):
-        def match_patterns(text, patterns):
-            if not text or not patterns:
-                return False
-
-            if not self._case_sensitive:
-                text = text.lower()
-
-            return any(pattern in text for pattern in patterns)
-
-        for field, patterns in self._ignore_patterns.items():
-            if match_patterns(song_info.get(field, ''), patterns):
-                return True
-
-        return False
-
-    def cleanup(self):
-        self._shutdown_event.set()
-        if self.listen_cache:
-            self.listen_cache.save_cache()
+        self.scrobbler.update(song)
 
 
-def _parse_args():
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description='ListenBrainz moOde Scrobbler')
     parser.add_argument('--dry-run', action='store_true',
                         help='Run pipeline without submitting to ListenBrainz')
@@ -576,63 +82,87 @@ def _parse_args():
     return parser.parse_args()
 
 
-def main():
-    args = _parse_args()
-    scrobbler = None
-    observer = None
-    received = []
+def connect(token: str) -> ListenBrainz:
+    lb_client.adapter = Transport(max_retries=lb_client.retry_strategy)
+    client = ListenBrainz()
+    client.set_auth_token(token, check_validity=False)
+    return client
 
-    def signal_handler(signum, frame):
-        received.append(signum)
-        sys.exit(0)
 
-    signal.signal(signal.SIGTERM, signal_handler)
-    signal.signal(signal.SIGINT, signal_handler)
-
+def validate(client: ListenBrainz, token: str, log: Logger, invalid: Event) -> None:
+    """Off the startup path: an unreachable API costs minutes of retries,
+    and tracks played meanwhile must still be seen (and cached)."""
+    log.wait("Token validating")
     try:
-        scrobbler = ListenBrainzScrobbler(dry_run=args.dry_run)
-        if args.dry_run:
-            scrobbler.log.wait("Dry run")
+        client.set_auth_token(token)
+        log.ok("Token valid")
+    except InvalidAuthTokenException:
+        log.error("Token invalid: check LISTENBRAINZ_TOKEN in .env")
+        invalid.set()
+    except Exception as e:
+        log.warning(f"Token unchecked, offline: {describe(e)}")
 
-        if not scrobbler.initialize():
-            scrobbler.log.error("Init failed, exit")
-            return 1
 
-        observer = Observer()
-        observer.schedule(
-            scrobbler,
-            path=os.path.dirname(scrobbler.settings['currentsong_file']),
-            recursive=False
-        )
+def main() -> int:
+    args = parse_args()
+    print(f"\nLISTENBRAINZ-MOODE-SCROBBLER v{__version__}\n")
 
-        observer.start()
-        scrobbler.log.info("Watcher active")
-
-        scrobbler.check_initial_playback()
-
-        scrobbler.log.info("Running, waiting")
-
-        while True:
-            time.sleep(1)
-
-    except (ValueError, FileNotFoundError, json.JSONDecodeError) as e:
+    load_dotenv(SRC.parent / '.env')
+    try:
+        settings = json.loads((SRC / 'settings.json').read_text(encoding='utf-8'))
+    except (OSError, ValueError) as e:
         print(f"Config err: {e}")
         return 1
-    except Exception as e:
-        if scrobbler:
-            scrobbler.log.error(f"Fatal: {e}")
-        else:
-            print(f"Fatal: {e}")
-        return 1
-    finally:
-        if observer:
-            observer.stop()
-            observer.join()
-        if scrobbler:
-            scrobbler.log.info(f"Signal {received[0]}: shutdown" if received else "Shutdown")
-            scrobbler.cleanup()
 
-    return 0
+    log = Logger(settings)
+    if not (token := os.getenv('LISTENBRAINZ_TOKEN')):
+        log.error("Token not found: LISTENBRAINZ_TOKEN in .env")
+        return 1
+    log.add_redaction(token)
+    if args.dry_run:
+        log.wait("Dry run")
+
+    received: list[int] = []
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        signal.signal(sig, lambda signum, _frame: received.append(signum))
+
+    client = connect(token)
+    invalid = Event()
+    Thread(target=validate, args=(client, token, log, invalid), daemon=True).start()
+
+    cache = None
+    if settings['features']['enable_cache']:
+        cache = ListenCache(SRC / 'cache' / settings['cache_file'], log)
+    scrobbler = Scrobbler(settings, client, cache, log, dry_run=args.dry_run)
+
+    path = Path(settings['currentsong_file'])
+    handler = CurrentSongHandler(path, scrobbler, log)
+    observer = Observer()
+    try:
+        observer.schedule(handler, str(path.parent), recursive=False, event_filter=handler.EVENTS)
+        observer.start()
+    except OSError as e:
+        log.error(f"Watch err: {path.parent}: {e}")
+        return 1
+
+    log.info(f"Watching: {path}")
+    handler.refresh()
+    Thread(target=scrobbler.run_cache, args=(CACHE_INTERVAL,), daemon=True).start()
+
+    try:
+        while observer.is_alive() and not received and not invalid.is_set():
+            observer.join(timeout=1)
+    finally:
+        observer.stop()
+        observer.join()
+        scrobbler.shutdown()
+
+    if received:
+        log.info(f"Signal {received[0]}: shutdown")
+        return 0
+    if not invalid.is_set():
+        log.error("Watcher lost, exit")
+    return 1
 
 
 if __name__ == "__main__":

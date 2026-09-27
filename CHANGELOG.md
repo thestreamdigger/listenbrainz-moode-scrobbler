@@ -3,6 +3,62 @@
 All notable changes to this project will be documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.4.0] - 2026-09-27
+### Added
+- AirPlay/Spotify pause detection: moOde drops renderer metadata from
+  currentsong.txt while no audio flows; read as pause (timer stops, played
+  time kept) instead of a session that kept counting
+- Renderer track duration read from moOde's aplmeta.json / spotmeta.json
+  when they describe the same track: the canonical rule now applies to
+  AirPlay/Spotify (was the min_play_time fallback, i.e. 30s)
+- Listening now cleared on pause and stop (POST /1/playing-now/delete,
+  ListenBrainz 2026-03) and restored on resume
+- User-Agent `lbms/<version> ( repo url )` on every API call: ListenBrainz
+  requires one and liblistenbrainz 0.7.0 sends none
+- HTTP timeout (10s connect / 30s read): liblistenbrainz 0.7.0 sets none, so
+  a stalled connection blocked its thread forever, the file watcher included
+- Test suite (tests/, stdlib unittest): parser, cache, sessions, transport
+  against a local HTTP server, watcher under both moOde write modes
+
+### Changed
+- Listen delay counts accumulated play time across pauses (each resume
+  restarted the full delay); listened_at stays the first start
+- Watcher reacts to close-after-write, create and move (was modify): with
+  moOde's default tmp2ram the file is rewritten in place, and modify fired
+  on an empty or half-written file
+- Qobuz, Squeezelite, Roon Bridge, Bluetooth and inputs end the running MPD
+  session: a track cut short by a renderer takeover was scrobbled anyway
+- Token validated in the background: an unreachable API delayed startup by
+  up to 60s with the watcher not yet running; an invalid token still exits
+- Cache drains fully each cycle in batches of 50 (was 10 per minute), runs
+  at startup, and is saved on every change (debounce timer removed)
+- Cache: a listen refused as invalid (HTTP 400) is isolated from its batch
+  and dropped instead of blocking the queue forever
+- Errors from the API are logged with their HTTP status
+- Code split into currentsong.py, scrobbler.py, cache.py and main.py;
+  dataclasses, type hints, match on play state
+- Watcher death exits 1 so systemd restarts it (process used to idle on)
+- install.sh: checks Python 3.10+ and python3-venv (was an unused pip3
+  check), runs commands without eval, restarts the service on reinstall
+  (start was a no-op on update), README documents the update path
+- Dependencies: python-dotenv 1.2.2 -> 1.2.3; requests pinned (imported)
+- README badges follow the family standard (version, license, platform,
+  language, domain)
+
+### Fixed
+- listened_at survives a wall-clock jump: a Pi boots on fake-hwclock and
+  NTP can move the clock days forward mid-track (seen on a live unit: boot
+  at Sep 20, synced to Sep 27). The start is kept monotonic and converted
+  at submission, so a track autoplayed at boot is no longer dated days back
+- systemd unit installed mode 600 (inherited from mktemp by cp), so
+  `systemctl cat lbms` failed for the service user; now 644
+- Dry run no longer submits the offline cache
+- A log format error printed the message unredacted
+- Dates of 1.0.0, 1.0.3 and 1.0.4, checked against the original history
+
+### Removed
+- release_mbid from musicbrainz_albumid: moOde never writes that key
+
 ## [1.3.3] - 2026-09-06
 ### Fixed
 - Track matched by ignore_patterns now closes the previous play session:
@@ -160,7 +216,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Credentials protected from version control
 - Automatic .env file creation with secure permissions
 
-## [1.0.4] - 2025-10-05
+## [1.0.4] - 2025-08-10
 ### Added
 - Debug logging to silent exception handlers for better troubleshooting
 
@@ -168,7 +224,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Simplified cache directory structure (src/cache/ instead of nested subdirectory)
 - Removed obsolete pending_listens.json from repository
 
-## [1.0.3] - 2025-01-03
+## [1.0.3] - 2025-06-25
 ### Added
 - Signal handlers for graceful shutdown on SIGTERM/SIGINT
 - Optimized cache I/O with delayed writes to reduce disk operations
@@ -193,7 +249,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 - Code cleanup and optimization in main.py
 
-## [1.0.0] - 2025-10-20
+## [1.0.0] - 2024-12-01
 ### Added
 - Initial stable release
 - Real-time "Listening now..." status updates

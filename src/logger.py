@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import logging
 from datetime import datetime
 from threading import RLock
@@ -14,53 +13,41 @@ class Logger:
         "OK": logging.INFO + 2
     }
 
-    def __init__(self, settings=None):
-        self.enabled = True
-        self.level = "INFO"
-        self.format = "[{level}] {message}"
-        self.timestamp = False
+    def __init__(self, settings: dict | None = None):
+        config = (settings or {}).get('logging', {})
+        self.enabled = config.get('enable', True)
+        self.level = config.get('level', 'INFO').upper()
+        self.format = config.get('format', '[{level}] {message}')
+        self.timestamp = config.get('timestamp', False)
         self._lock = RLock()
-        self._redactions = []
+        self._redactions: list[tuple[str, str]] = []
 
-        if settings and 'logging' in settings:
-            logging_settings = settings.get('logging', {})
-            self.enabled = logging_settings.get('enable', True)
-            self.level = logging_settings.get('level', 'INFO').upper()
-            self.format = logging_settings.get('format', '[{level}] {message}')
-            self.timestamp = logging_settings.get('timestamp', False)
-
-    def add_redaction(self, text, replacement="****"):
+    def add_redaction(self, text: str, replacement: str = "****") -> None:
         if not text:
             return
         with self._lock:
             if (text, replacement) not in self._redactions:
                 self._redactions.append((text, replacement))
 
-    def _log(self, level, message):
+    def _log(self, level: str, message: object) -> None:
         if not self.enabled or self.LEVELS.get(level, 0) < self.LEVELS.get(self.level, 0):
             return
 
         with self._lock:
+            text = str(message)
+            for secret, replacement in self._redactions:
+                text = text.replace(secret, replacement)
             try:
-                safe_message = message
-                for text, replacement in self._redactions:
-                    safe_message = str(safe_message).replace(text, replacement)
+                line = self.format.format(level=level, message=text)
+            except (KeyError, IndexError, ValueError) as e:
+                line = f"[{level}] {text} (Format err: {e})"
+            if self.timestamp:
+                line = f"{datetime.now():%Y-%m-%d %H:%M:%S.%f}"[:-3] + f" {line}"
+            print(line, flush=True)
 
-                parts = []
-
-                if self.timestamp:
-                    parts.append(datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
-
-                output = self.format.format(level=level, message=safe_message)
-                parts.append(output)
-
-                print(" ".join(parts), flush=True)
-            except Exception as e:
-                print(f"[{level}] {message} (Format err: {e})", flush=True)
-
-    def debug(self, message): self._log("DEBUG", message)
-    def info(self, message): self._log("INFO", message)
-    def wait(self, message): self._log("WAIT", message)
-    def ok(self, message): self._log("OK", message)
-    def warning(self, message): self._log("WARNING", message)
-    def error(self, message): self._log("ERROR", message)
+    def debug(self, message: object) -> None: self._log("DEBUG", message)
+    def info(self, message: object) -> None: self._log("INFO", message)
+    def wait(self, message: object) -> None: self._log("WAIT", message)
+    def ok(self, message: object) -> None: self._log("OK", message)
+    def warning(self, message: object) -> None: self._log("WARNING", message)
+    def error(self, message: object) -> None: self._log("ERROR", message)

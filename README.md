@@ -1,11 +1,10 @@
 # ListenBrainz moOde Scrobbler
 
-[![Version](https://img.shields.io/badge/version-1.3.3-blue.svg)](https://github.com/thestreamdigger/listenbrainz-moode-scrobbler)
-[![License](https://img.shields.io/badge/license-GPL%20v3-green.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
-[![Status](https://img.shields.io/badge/status-stable-brightgreen.svg)]()
-[![Raspberry Pi](https://img.shields.io/badge/platform-Raspberry%20Pi-C51A4A.svg)](https://www.raspberrypi.org/)
-[![moOde](https://img.shields.io/badge/works%20with-moOde%20audio-orange.svg)](https://moodeaudio.org/)
+[![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)](https://github.com/thestreamdigger/listenbrainz-moode-scrobbler)
+[![License](https://img.shields.io/badge/license-GPL--3.0-green.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![Platform](https://img.shields.io/badge/platform-Raspberry%20Pi-red.svg)](https://www.raspberrypi.com/)
+[![Language](https://img.shields.io/badge/python-3.10%2B-yellow.svg)](https://www.python.org/)
+[![moOde](https://img.shields.io/badge/moOde-compatible-lightgrey.svg)](https://moodeaudio.org/)
 
 Python scrobbler for moOde audio player (Raspberry Pi) to ListenBrainz. Watches `currentsong.txt` and submits played tracks.
 
@@ -13,23 +12,25 @@ Python scrobbler for moOde audio player (Raspberry Pi) to ListenBrainz. Watches 
 
 Hobby project. Monitors tracks played via moOde, submits to ListenBrainz.
 
-Supported sources: MPD (local files, internet radio, UPnP via upmpdcli), plus AirPlay and Spotify Connect on moOde 10.2+ (renderer metadata in `currentsong.txt`). Bluetooth, Squeezelite, RoonBridge and Deezer are out of scope — moOde writes only a renderer marker without track metadata for those.
+Supported sources:
 
-Renderer caveats (AirPlay/Spotify): `currentsong.txt` carries no play state or duration for renderers, so pause is not detectable (the `min_play_time` timer keeps running) and the scrobble delay is always the `min_play_time` fallback.
+- **MPD**: local files, internet radio, UPnP via upmpdcli
+- **AirPlay** and **Spotify Connect** (moOde 10.2+): moOde writes renderer metadata to `currentsong.txt` while audio flows. Pause is detected (the metadata disappears), and the track duration is read from moOde's own renderer cache (`aplmeta.json` / `spotmeta.json`), so the canonical rule applies.
+- **Qobuz Connect, Squeezelite, Roon Bridge, Bluetooth, analog/S/PDIF input**: out of scope. moOde publishes only a renderer marker without track metadata. Switching to one of them ends the running MPD session, so a track cut short is not scrobbled.
 
 Known limitation: repeating the same track without a state transition (repeat-1) produces a single listen — track identity is title/artist/album and MPD does not signal the boundary in `currentsong.txt`.
 
 ## Features
 
-- Real-time "Listening now" status
-- Canonical scrobble rule: `min(duration * 50%, 240s)`, floor at
-  `min_play_time`. Falls back to `min_play_time` when duration is
-  absent from `currentsong.txt` (streams filtered via patterns).
-- ListenBrainz metadata: `tracknumber`, `submission_client`, `media_player`
-  always; `duration_ms` and `release_mbid` only when moOde provides them in
-  `currentsong.txt` (per MetaBrainz recommendations)
-- Offline cache with automatic retry and batch submission
-- Metadata parsing from moOde `currentsong.txt`
+- Real-time "Listening now" status, cleared on pause/stop and restored on resume
+- ListenBrainz rule: a listen is submitted after `min(duration * 50%, 240s)` of
+  accumulated play time (pauses excluded), floor at `min_play_time`. Falls back
+  to `min_play_time` when the duration is unknown (streams are filtered via patterns).
+- `listened_at` is the playback start time
+- ListenBrainz metadata: `submission_client`, `submission_client_version`,
+  `media_player` always; `music_service` for Spotify; `tracknumber` and
+  `duration_ms` when known (per MetaBrainz recommendations)
+- Offline cache: failed listens are kept on disk and resubmitted in batches
 - `.env` token storage with automatic redaction in logs
 - Pattern filters (ignore radio streams, unknown artists)
 - `--dry-run` mode for testing without submission
@@ -37,9 +38,12 @@ Known limitation: repeating the same track without a state transition (repeat-1)
 
 ## Requirements
 
-- Raspberry Pi running [moOde audio player](https://moodeaudio.org/)
-- Python 3.10 or higher
+- Raspberry Pi running [moOde audio player](https://moodeaudio.org/) (AirPlay/Spotify support needs 10.2+)
+- Python 3.10 or higher, with `venv` (`sudo apt install python3-venv` if missing)
 - [ListenBrainz](https://listenbrainz.org/) account and API token
+- moOde **Metadata file** enabled (off by default, see [moOde Configuration](#moode-configuration))
+
+Verified on moOde 10.3.0, Raspberry Pi 4, Python 3.13. The test suite also runs on Python 3.10.
 
 ## Quick Installation
 
@@ -80,6 +84,16 @@ sudo ./install.sh -q
 # Show help
 ./install.sh --help
 ```
+
+### Updating
+
+```bash
+cd lbms
+git pull
+sudo ./install.sh -q
+```
+
+Quiet mode keeps the existing `.env`, rebuilds the venv with the pinned dependencies and restarts the service. `src/settings.json` is tracked by git: if you edited it, `git stash` before the pull and `git stash pop` after.
 
 **Note:** installer creates `/etc/systemd/system/lbms.service`, enables auto-start on boot, and starts the service. Runs as `$SUDO_USER` (fallback `pi`).
 
@@ -211,11 +225,17 @@ python3 src/main.py
 
 ### Cache Processing
 
-- Individual submission for small queues (< 3 pending)
-- Batch submission (up to 10) for larger queues after offline recovery
-- Connection re-check every 60s processes pending scrobbles
-- Atomic writes (`fsync` + `rename`) on cache save
+- Pending listens are submitted at startup and every 60s, oldest first, in batches of up to 50 until the queue is empty
+- A transient failure (network, 5xx, rate limit, revoked token) keeps the listen for the next cycle
+- A listen the API refuses as invalid (HTTP 400) is isolated from its batch and dropped, so it cannot block the queue
+- Up to 1000 listens kept; atomic writes (`fsync` + `rename`) on every change
 - Backup (`.corrupt.<timestamp>`) on parse errors
+
+### Network
+
+- Every API call carries `User-Agent: lbms/<version> ( <repo url> )`, which ListenBrainz requires
+- 10s connect / 30s read timeout on every call
+- The token is validated in the background: startup never waits for the network, and an invalid token stops the service
 
 ### Content Filtering
 
@@ -327,14 +347,27 @@ lbms/
 ├── CHANGELOG.md              # Version history
 ├── examples/
 │   └── lbms.service.example  # Systemd service template
+├── tests/
+│   └── test_lbms.py          # Test suite (stdlib unittest)
 └── src/
-    ├── main.py               # Main scrobbler script
+    ├── main.py               # Entry point: watcher, signals, API transport
+    ├── currentsong.py        # moOde currentsong.txt parser
+    ├── scrobbler.py          # Play sessions, Listening now, submission
+    ├── cache.py              # Offline listen cache
     ├── logger.py             # Logging module
     ├── __version__.py        # Version information
     ├── settings.json         # Application settings (safe to commit)
     └── cache/                # Created at runtime (gitignored)
         └── pending_listens.json  # Offline cache
 ```
+
+## Tests
+
+```bash
+./venv/bin/python3 -m unittest discover tests
+```
+
+Linux only (the watcher tests use inotify). No network: the API is played by a local HTTP server.
 
 ## Documentation
 

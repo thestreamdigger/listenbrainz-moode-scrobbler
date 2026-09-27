@@ -3,6 +3,30 @@
 All notable changes to this project will be documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.3.3] - 2026-09-06
+### Fixed
+- Track matched by ignore_patterns now closes the previous play session:
+  the old track's listen timer no longer fires after the switch (phantom
+  scrobble of a track cut short), and replaying that track is detected
+  again (was silently skipped: stale current_song + play_start_time)
+- Shutdown deadlock: signal handler logged while the main thread could be
+  holding the logger lock (startup window), hanging until systemd SIGKILL;
+  handler now only records the signal, logger lock made reentrant
+- install.sh uses absolute paths for venv and requirements (venv landed in
+  the caller's cwd when invoked from outside the repo dir)
+- install.sh -q no longer prompts for the token: keeps an existing .env or
+  skips with a notice (was blocking on read under non-interactive deploy)
+- Cache: invalid listens dropped from a batch now schedule a save; "Cache
+  done" only when the queue is empty ("Cache batch done" otherwise)
+
+### Removed
+- Unreachable KeyboardInterrupt handler (SIGINT already routed through the
+  signal handler)
+- Unused PROJECT_DESC in install.sh; CRITICAL logger level without method;
+  always-true cache_dir guards in ListenCache
+- chmod 600 on settings.json (holds no secret since 1.3.2); redundant sudo
+  inside the root-only installer
+
 ## [1.3.2] - 2026-07-05
 ### Fixed
 - install.sh now rewrites User=/Group= in the systemd unit to the invoking

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import logging
 from datetime import datetime
-from threading import Lock
+from threading import RLock
 
 
 class Logger:
@@ -10,7 +10,6 @@ class Logger:
         "INFO": logging.INFO,
         "WARNING": logging.WARNING,
         "ERROR": logging.ERROR,
-        "CRITICAL": logging.CRITICAL,
         "WAIT": logging.INFO + 1,
         "OK": logging.INFO + 2
     }
@@ -20,7 +19,7 @@ class Logger:
         self.level = "INFO"
         self.format = "[{level}] {message}"
         self.timestamp = False
-        self._lock = Lock()
+        self._lock = RLock()
         self._redactions = []
 
         if settings and 'logging' in settings:

@@ -95,12 +95,9 @@ class ListenCache:
                 self._save_timer = None
 
             cache_dir = os.path.dirname(self.cache_file)
-            if cache_dir:
-                os.makedirs(cache_dir, exist_ok=True)
+            os.makedirs(cache_dir, exist_ok=True)
 
-            temp_fd, temp_path = tempfile.mkstemp(
-                prefix=".lbms_cache_", dir=cache_dir if cache_dir else None
-            )
+            temp_fd, temp_path = tempfile.mkstemp(prefix=".lbms_cache_", dir=cache_dir)
             try:
                 with os.fdopen(temp_fd, 'w') as tmp_f:
                     json.dump(list(self.pending_listens), tmp_f)
@@ -108,12 +105,11 @@ class ListenCache:
                     os.fsync(tmp_f.fileno())
                 os.replace(temp_path, self.cache_file)
 
-                if cache_dir:
-                    dir_fd = os.open(cache_dir, os.O_RDONLY)
-                    try:
-                        os.fsync(dir_fd)
-                    finally:
-                        os.close(dir_fd)
+                dir_fd = os.open(cache_dir, os.O_RDONLY)
+                try:
+                    os.fsync(dir_fd)
+                finally:
+                    os.close(dir_fd)
             finally:
                 if os.path.exists(temp_path):
                     try:
@@ -188,7 +184,8 @@ class ListenCache:
                 batch.append(Listen(**listen_dict))
                 valid_dicts.append(listen_dict)
             except Exception as e:
-                self.log.error(f"Invalid listen: {e}")
+                self.log.error(f"Invalid listen dropped: {e}")
+                self._schedule_save()
 
         if batch:
             try:
@@ -288,7 +285,10 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
             self.log.info("Cache processing")
 
             if self.listen_cache.process_pending_listens(self.client):
-                self.log.ok("Cache done")
+                if self.listen_cache.has_pending():
+                    self.log.ok("Cache batch done")
+                else:
+                    self.log.ok("Cache done")
             else:
                 self.log.warning("Cache partial")
 
@@ -460,6 +460,8 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
             return
 
         if self._should_ignore(song_info):
+            self._end_session()
+            self.log.debug(f"Ignored: {song_info.get('title')} - {song_info.get('artist')}")
             return
 
         state = song_info.get("state")
@@ -471,10 +473,7 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
                     self.log.info(f"Paused: {self.current_song.get('title')}")
                     self.play_start_time = None
             else:
-                self.log.info(f"Stopped: {self.current_song.get('title')}")
-                self.current_song = None
-                self.play_start_time = None
-                self.scrobbled = False
+                self._end_session()
             return
 
         if self._same_track(song_info, self.current_song):
@@ -494,6 +493,14 @@ class ListenBrainzScrobbler(FileSystemEventHandler):
         self.play_start_time = time.time()
         self.scrobbled = False
         self._start_listen_timer(song_info)
+
+    def _end_session(self):
+        if not self.current_song:
+            return
+        self.log.info(f"Stopped: {self.current_song.get('title')}")
+        self.current_song = None
+        self.play_start_time = None
+        self.scrobbled = False
 
     def _start_listen_timer(self, song_info):
         if not self.settings['features']['enable_listen']:
@@ -573,10 +580,10 @@ def main():
     args = _parse_args()
     scrobbler = None
     observer = None
+    received = []
 
     def signal_handler(signum, frame):
-        if scrobbler:
-            scrobbler.log.info(f"Signal {signum}: shutdown")
+        received.append(signum)
         sys.exit(0)
 
     signal.signal(signal.SIGTERM, signal_handler)
@@ -608,9 +615,6 @@ def main():
         while True:
             time.sleep(1)
 
-    except KeyboardInterrupt:
-        if scrobbler:
-            scrobbler.log.info("Shutdown signal")
     except (ValueError, FileNotFoundError, json.JSONDecodeError) as e:
         print(f"Config err: {e}")
         return 1
@@ -625,7 +629,7 @@ def main():
             observer.stop()
             observer.join()
         if scrobbler:
-            scrobbler.log.info("Shutdown")
+            scrobbler.log.info(f"Signal {received[0]}: shutdown" if received else "Shutdown")
             scrobbler.cleanup()
 
     return 0

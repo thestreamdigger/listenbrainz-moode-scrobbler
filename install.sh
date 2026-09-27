@@ -9,7 +9,6 @@ set -e
 
 # Configuration
 PROJECT_NAME="LBMS"
-PROJECT_DESC="ListenBrainz moOde Scrobbler"
 VENV_DIR="venv"
 REQUIREMENTS_FILE="requirements.txt"
 PYTHON_CMD="python3"
@@ -48,7 +47,7 @@ while [[ $# -gt 0 ]]; do
     -h|--help)
       echo "Usage: $0 [OPTIONS]"
       echo "Options:"
-      echo "  -q, --quiet        Quiet mode (no interactive prompts)"
+      echo "  -q, --quiet        Quiet mode (no prompts; keeps .env or skips token)"
       echo "  --skip-service     Skip systemd service setup"
       echo "  --skip-token       Skip token configuration"
       echo "  -h, --help         Show this help message"
@@ -120,11 +119,11 @@ setup_python_env() {
     rm -rf "$BASE_DIR/$VENV_DIR"
   fi
 
-  execute_cmd "Venv create" "$PYTHON_CMD -m venv $VENV_DIR"
+  execute_cmd "Venv create" "$PYTHON_CMD -m venv '$BASE_DIR/$VENV_DIR'"
 
   # Install requirements
   if [ -f "$BASE_DIR/$REQUIREMENTS_FILE" ]; then
-    execute_cmd "Deps install" "$BASE_DIR/$VENV_DIR/bin/pip install -r $REQUIREMENTS_FILE"
+    execute_cmd "Deps install" "'$BASE_DIR/$VENV_DIR/bin/pip' install -r '$BASE_DIR/$REQUIREMENTS_FILE'"
   else
     log_info "No requirements.txt, skip"
   fi
@@ -139,18 +138,23 @@ setup_configuration() {
   TARGET_USER=${SUDO_USER:-$DEFAULT_USER}
   if [ "$TARGET_USER" = "root" ]; then TARGET_USER=$DEFAULT_USER; fi
 
-  # settings.json is committed to repository (without token)
-  if [ -f "$SETTINGS_FILE" ]; then
-    chown "$TARGET_USER:$TARGET_USER" "$SETTINGS_FILE"
-    chmod 600 "$SETTINGS_FILE"
-    log_info "settings.json: 600"
-  else
+  # settings.json is committed to repository (no secrets)
+  if [ ! -f "$SETTINGS_FILE" ]; then
     log_error "settings.json not found"
   fi
 
   # Setup .env file
   if [ "$SKIP_TOKEN" = "true" ]; then
     log_info "Token skipped"
+    return 0
+  fi
+
+  if [ "$QUIET_MODE" = "true" ]; then
+    if [ -f "$ENV_FILE" ]; then
+      log_info ".env kept"
+    else
+      echo "[WARN] quiet mode: no .env, create $ENV_FILE with LISTENBRAINZ_TOKEN"
+    fi
     return 0
   fi
 
@@ -229,12 +233,7 @@ setup_permissions() {
   chmod 755 "$BASE_DIR/install.sh" 2>/dev/null || true
   chmod 755 "$BASE_DIR/src/main.py" 2>/dev/null || true
 
-  # Protect sensitive files
-  if [ -f "$SETTINGS_FILE" ]; then
-    chmod 600 "$SETTINGS_FILE"
-    chown "$TARGET_USER:$TARGET_USER" "$SETTINGS_FILE"
-  fi
-
+  # Protect token
   if [ -f "$ENV_FILE" ]; then
     chmod 600 "$ENV_FILE"
     chown "$TARGET_USER:$TARGET_USER" "$ENV_FILE"
@@ -267,10 +266,10 @@ setup_service() {
         -e "s|^Group=pi$|Group=$TARGET_USER|" \
         "$SERVICE_EXAMPLE" > "$TMP_SERVICE"
 
-    execute_cmd "Service copy" "sudo cp '$TMP_SERVICE' '$SERVICE_FILE'"
-    execute_cmd "Daemon reload" "sudo systemctl daemon-reload"
-    execute_cmd "Service enable" "sudo systemctl enable $SERVICE_NAME.service"
-    execute_cmd "Service start" "sudo systemctl start $SERVICE_NAME.service"
+    execute_cmd "Service copy" "cp '$TMP_SERVICE' '$SERVICE_FILE'"
+    execute_cmd "Daemon reload" "systemctl daemon-reload"
+    execute_cmd "Service enable" "systemctl enable $SERVICE_NAME.service"
+    execute_cmd "Service start" "systemctl start $SERVICE_NAME.service"
 
     rm -f "$TMP_SERVICE"
     log_ok "Service running"

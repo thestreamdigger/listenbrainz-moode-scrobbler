@@ -1,6 +1,6 @@
 # ListenBrainz moOde Scrobbler
 
-[![Version](https://img.shields.io/badge/version-1.3.2-blue.svg)](https://github.com/thestreamdigger/listenbrainz-moode-scrobbler)
+[![Version](https://img.shields.io/badge/version-1.3.3-blue.svg)](https://github.com/thestreamdigger/listenbrainz-moode-scrobbler)
 [![License](https://img.shields.io/badge/license-GPL%20v3-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![Status](https://img.shields.io/badge/status-stable-brightgreen.svg)]()
@@ -74,7 +74,7 @@ sudo ./install.sh --skip-service
 # Skip token configuration (configure later)
 sudo ./install.sh --skip-token
 
-# Quiet mode (no interactive prompts)
+# Quiet mode (no prompts; keeps existing .env, otherwise skips token)
 sudo ./install.sh -q
 
 # Show help
@@ -262,7 +262,6 @@ chmod 600 .env
 # Fix permissions
 sudo chown -R pi:pi /home/pi/lbms
 chmod 600 .env
-chmod 600 src/settings.json
 ```
 
 ### Service not starting
@@ -296,7 +295,6 @@ echo "LISTENBRAINZ_TOKEN=your_token_here" > .env
 
 # 4. Set permissions
 chmod 600 .env
-chmod 600 src/settings.json
 
 # 5. (Optional) Install systemd service
 # Replace /home/pi/lbms with your actual installation path
